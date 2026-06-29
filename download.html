@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحميل اللعبة | Vk Store</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 'cairo': ['Cairo', 'sans-serif'] },
+                    colors: {
+                        darkBg: '#0b0c10',
+                        cardBg: '#1f2833',
+                        neonAccent: '#66fcf1',
+                        subText: '#c5c6c7'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0b0c10; color: #ffffff; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0c10; }
+        ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
+        ::-webkit-scrollbar-thumb:hover { background: #66fcf1; }
+
+        /* --- Modal Overlay --- */
+        #adModal {
+            transition: opacity 0.3s ease;
+        }
+        #adModal.hidden {
+            display: none !important;
+        }
+
+        /* --- Modal Card --- */
+        #modalContainer {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            background: rgba(18, 20, 32, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(102, 252, 241, 0.12);
+            box-shadow:
+                0 0 60px rgba(0,0,0,0.7),
+                0 0 30px rgba(102, 252, 241, 0.06),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        /* --- Ad Banner Slot --- */
+        #adBannerSlot {
+            width: 300px;
+            height: 250px;
+            background: rgba(255,255,255,0.025);
+            border: 1.5px dashed rgba(255,255,255,0.12);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Countdown Ring --- */
+        .countdown-ring {
+            position: relative;
+            width: 72px;
+            height: 72px;
+        }
+        .countdown-ring svg {
+            transform: rotate(-90deg);
+        }
+        .countdown-ring .ring-bg {
+            fill: none;
+            stroke: rgba(102, 252, 241, 0.1);
+            stroke-width: 5;
+        }
+        .countdown-ring .ring-fill {
+            fill: none;
+            stroke: #66fcf1;
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-dasharray: 189.6;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+            filter: drop-shadow(0 0 6px rgba(102,252,241,0.7));
+        }
+        .countdown-ring .ring-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #66fcf1;
+            text-shadow: 0 0 12px rgba(102,252,241,0.6);
+        }
+
+        /* --- Download Button States --- */
+        #finalDownloadBtn {
+            transition: background 0.5s ease, box-shadow 0.5s ease, color 0.3s ease, transform 0.1s ease;
+        }
+        #finalDownloadBtn.btn-waiting {
+            background: rgba(255,255,255,0.06);
+            color: #6b7280;
+            border: 1.5px solid rgba(255,255,255,0.08);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #finalDownloadBtn.btn-ready {
+            background: linear-gradient(135deg, #10b981, #06d6a0, #00f5c4);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2);
+            animation: pulse-green 2s infinite;
+        }
+        #finalDownloadBtn.btn-ready:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(16,185,129,0.7), 0 0 80px rgba(16,185,129,0.3);
+        }
+        #finalDownloadBtn.btn-ready:active {
+            transform: scale(0.97);
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2); }
+            50%       { box-shadow: 0 0 45px rgba(16,185,129,0.75), 0 0 90px rgba(16,185,129,0.35); }
+        }
+
+        /* Scanning line animation in ad slot */
+        @keyframes scan {
+            0%   { transform: translateY(-100%); }
+            100% { transform: translateY(400%); }
+        }
+        .scan-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(102,252,241,0.4), transparent);
+            animation: scan 2s linear infinite;
+        }
+
+        /* --- Dynamic grid for download buttons --- */
+        #downloadBtnsGrid {
+            display: grid;
+            gap: 1rem;
+        }
+        /* 1 visible button → full width */
+        #downloadBtnsGrid.cols-1 { grid-template-columns: 1fr; }
+        /* 2 visible buttons → 2 equal cols */
+        #downloadBtnsGrid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        /* 3 visible buttons → 3 equal cols */
+        #downloadBtnsGrid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        /* 4 visible buttons → 2x2 grid */
+        #downloadBtnsGrid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+        /* 5 visible buttons → 3 cols (2 in first row, 3 in second) */
+        #downloadBtnsGrid.cols-5 { grid-template-columns: repeat(3, 1fr); }
+
+        @media (max-width: 640px) {
+            #downloadBtnsGrid.cols-2,
+            #downloadBtnsGrid.cols-3,
+            #downloadBtnsGrid.cols-4,
+            #downloadBtnsGrid.cols-5 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-16 flex flex-col justify-between">
+
+    <!-- ===== HEADER ===== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 group">
+                    <img src="image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
+                </div>
+                <a href="index.html" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 border border-white/5 transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>العودة للصفحة الرئيسية</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MAIN ===== -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 flex-grow w-full">
+
+        <!-- Loading -->
+        <div id="pageLoader" class="flex flex-col items-center justify-center py-32">
+            <div class="w-12 h-12 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></div>
+            <p class="mt-4 text-sm text-gray-400 animate-pulse">جاري جلب تفاصيل التحميل...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="errorBox" class="hidden text-center py-20 bg-[#151821] rounded-3xl border border-red-500/20 p-8">
+            <i class="fa-solid fa-circle-exclamation text-5xl text-red-400 mb-4"></i>
+            <h2 id="errorText" class="text-xl font-bold text-white">حدث خطأ ما</h2>
+            <a href="index.html" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition">الرئيسية</a>
+        </div>
+
+        <!-- Game Content -->
+        <div id="gameContent" class="hidden space-y-6">
+
+            <!-- Game Card -->
+            <div class="bg-[#151821] border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+                <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <img id="gCover" src="" alt="" class="w-40 h-52 object-cover rounded-2xl shadow-lg border border-white/10 shrink-0 bg-gray-900">
+
+                <div class="flex-1 text-center md:text-right z-10 w-full">
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                        <span id="gConsole" class="px-3 py-1 rounded-lg bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 font-black text-xs uppercase"></span>
+                        <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
+                    </div>
+
+                    <h1 id="gTitle" class="text-2xl sm:text-3xl font-black text-white mt-3 leading-tight"></h1>
+
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
+                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            <span class="text-gray-500 block text-[10px]">الحجم</span>
+                            <span id="gSize" dir="ltr" class="font-bold text-cyan-400"></span>
+                        </div>
+                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            <span class="text-gray-500 block text-[10px]">الإصدار</span>
+                            <span id="gVersion" class="font-bold"></span>
+                        </div>
+                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            <span class="text-gray-500 block text-[10px]">التحميلات</span>
+                            <span id="gDownloads" class="font-bold text-emerald-400"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Archive Password Component (conditional rendering) ===== -->
+            <div id="archivePasswordBox" class="hidden bg-[#1a1e29]/80 backdrop-blur-md border border-cyan-500/20 rounded-2xl p-5 shadow-2xl">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-key text-cyan-400 text-xl"></i>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-gray-400 mb-0.5">كلمة المرور لفك الضغط / Archive Password:</span>
+                            <span id="passwordValue" class="text-lg font-black text-cyan-300 tracking-wider" dir="ltr"></span>
+                        </div>
+                    </div>
+                    <button id="copyPasswordBtn" onclick="copyPassword()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-clipboard" id="copyIcon"></i>
+                        <span id="copyText">Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== Main Page Banner Slot (Above Buttons Grid) ===== -->
+            <div id="ad-slot-main-top" class="w-full bg-[#151821]/60 border border-dashed border-cyan-500/20 rounded-2xl p-4 my-6 flex flex-col items-center justify-center min-h-[100px] overflow-hidden select-none">
+                <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Advertisement</span>
+            </div>
+
+            <!-- ===== Download Buttons (rendered dynamically) ===== -->
+            <div id="downloadBtnsGrid" class="pt-4">
+                <!-- Buttons are injected here by renderDownloadButtons() -->
+            </div>
+
+            <!-- ===== Native Ad Slot (Below Buttons Grid) ===== -->
+            <div id="ad-slot-main-bottom" class="w-full bg-[#151821]/40 border border-white/5 rounded-2xl p-4 mt-8 flex flex-col items-center justify-center min-h-[180px] overflow-hidden select-none">
+                <span class="text-[10px] text-gray-600 font-mono tracking-widest uppercase mb-1">Sponsored Content</span>
+            </div>
+
+            <!-- ===== Social Media Section ===== -->
+            <div class="bg-[#151821] border border-white/5 rounded-3xl p-8 shadow-2xl mt-12 text-center">
+                <h3 class="text-sm font-bold text-gray-400 mb-6 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-cyan-400"></i>
+                    تابع حساباتنا / Follow Us
+                </h3>
+                <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+                    <!-- YouTube Card -->
+                    <a href="https://www.youtube.com/@vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
+                        <i class="fa-brands fa-youtube text-3xl text-red-500 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">YouTube</span>
+                    </a>
+                    <!-- Telegram Card -->
+                    <a href="https://t.me/Vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
+                        <i class="fa-brands fa-telegram text-3xl text-[#229ED9] group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">Telegram</span>
+                    </a>
+                    <!-- Discord Card -->
+                    <a href="https://discord.gg/DsvwpTgaj" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
+                        <i class="fa-brands fa-discord text-3xl text-[#5865F2] group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">Discord</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="mt-16 border-t border-white/5 py-6 text-center text-xs text-gray-500">
+        جميع الحقوق محفوظة © VK STORE 2026
+    </footer>
+
+
+    <!-- ============================================================
+         DOWNLOAD MODAL  —  Glassmorphism Dark + Ad Slot + Countdown
+    ============================================================= -->
+    <div id="adModal"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden"
+         style="background: rgba(0,0,0,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0;">
+
+        <!-- Clicking the backdrop closes the modal -->
+        <div id="modalBackdrop" class="absolute inset-0 cursor-pointer"></div>
+
+        <!-- Modal Card -->
+        <div id="modalContainer"
+             class="relative z-10 w-full max-w-sm rounded-3xl overflow-hidden flex flex-col"
+             style="transform: scale(0.92);">
+
+            <!-- Top Bar -->
+            <div class="flex items-center justify-between px-5 py-3.5"
+                 style="background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-2 text-xs font-bold text-cyan-400">
+                    <i class="fa-solid fa-lock-keyhole text-sm animate-pulse"></i>
+                    <span>جاري تجهيز رابط التحميل الآمن...</span>
+                </div>
+                <button onclick="closeAdModal()"
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-white/5 transition text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="flex flex-col items-center gap-5 p-6">
+
+                <!-- Hint text -->
+                <p class="text-[11px] text-gray-400 text-center leading-relaxed">
+                    يرجى الانتظار، جاري تجهيز رابط التحميل الآمن...
+                </p>
+
+                <!-- ★ Ad Banner Slot 300×250 ★ -->
+                <div id="adBannerSlot">
+                    <div class="scan-line"></div>
+                    <!-- ▼▼▼ ضع كود إعلان Google AdSense أو PropellerAds هنا ▼▼▼ -->
+                    <!--
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <ins class="adsbygoogle"
+                         style="display:inline-block;width:300px;height:250px"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="XXXXXXXXXX"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    -->
+                    <i class="fa-solid fa-rectangle-ad text-3xl text-white/10"></i>
+                    <span class="text-[11px] text-gray-600 font-mono">Ad Slot — 300 × 250</span>
+                    <span class="text-[10px] text-gray-700">Google AdSense / PropellerAds</span>
+                </div>
+
+                <!-- Countdown Ring -->
+                <div class="countdown-ring" id="countdownRing">
+                    <svg width="72" height="72" viewBox="0 0 72 72">
+                        <circle class="ring-bg" cx="36" cy="36" r="30.2"/>
+                        <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30.2"/>
+                    </svg>
+                    <div class="ring-text" id="secondsLeft">10</div>
+                </div>
+
+                <!-- Download Button -->
+                <button id="finalDownloadBtn"
+                        class="btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5"
+                        disabled>
+                    <i class="fa-solid fa-hourglass-half" id="btnIcon"></i>
+                    <span id="btnText">يرجى الانتظار (10)</span>
+                </button>
+
+                <!-- Cancel link -->
+                <button onclick="closeAdModal()"
+                        class="text-[11px] text-gray-600 hover:text-red-400 underline underline-offset-2 transition">
+                    إلغاء والعودة للصفحة
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        const API_BASE_URL    = "http://127.0.0.1:8000/api/games";
+        const COUNTDOWN_START = 10;
+        const CIRCUMFERENCE   = 2 * Math.PI * 30.2; // ≈ 189.7
+
+        let currentGameData     = null;
+        let activeUrlToRedirect = "";
+        let countdownTimer      = null;
+
+        // --- Fetch game id from URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId    = urlParams.get('id');
+
+        // SECURITY: Strict ID Parameter Type-Guarding (Anti Path-Traversal)
+        function isValidGameId(id) {
+            return /^\d+$/.test(id);
+        }
+
+        // SECURITY: Protocol Enforcement for Redirects (Anti Malicious JS-Protocol)
+        function getSecureUrl(rawUrl) {
+            try {
+                const parsed = new URL(rawUrl, window.location.origin);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
+                }
+                console.warn('Blocked insecure protocol:', parsed.protocol);
+                return null;
+            } catch (e) {
+                console.warn('Invalid URL format:', rawUrl);
+                return null;
+            }
+        }
+
+        // AD-MONETIZATION: Pop-Under Trigger Hook
+        function triggerOptionalPopUnder() {
+            /* Pop-under networks auto-attach to window clicks; this hook is reserved for custom direct-link pop triggers */
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // SECURITY: Validate gameId before processing
+            if (!gameId || !isValidGameId(gameId)) {
+                triggerError("رابط غير صالح");
+                return;
+            }
+            fetchGameDetails(gameId);
+        });
+
+        // ---- API ----
+        async function fetchGameDetails(id) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/${id}`);
+                if (!res.ok) throw new Error();
+                
+                // SECURITY: Defensive JSON Parsing
+                const payload = await res.json();
+                const game = payload.data ? payload.data : payload;
+                
+                if (!game || typeof game !== 'object') {
+                    throw new Error('Invalid game data structure');
+                }
+                
+                currentGameData = game;
+                renderPageUI(currentGameData);
+            } catch {
+                triggerError("عذراً، هذه اللعبة غير موجودة في قاعدة البيانات أو تم حذفها.");
+            }
+        }
+
+        // ---- Helper: is a link value valid? ----
+        function isValidLink(url) {
+            return url && typeof url === 'string' && url.trim() !== '' && url.trim().toLowerCase() !== 'null';
+        }
+
+        // ---- Render UI ----
+        function renderPageUI(game) {
+            document.getElementById('pageLoader').classList.add('hidden');
+            document.getElementById('gameContent').classList.remove('hidden');
+
+            // SECURITY: Use textContent instead of innerText to prevent DOM clobbering
+            document.getElementById('gTitle').textContent   = game.title;
+            document.getElementById('gConsole').textContent = game.console;
+            document.getElementById('gSize').textContent    = game.size    || 'غير محدد';
+            document.getElementById('gVersion').textContent = game.version || 'v1.0';
+
+            const coverImg = document.getElementById('gCover');
+            const fallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400';
+            coverImg.src = (game.cover_image && game.cover_image.trim()) ? game.cover_image : fallback;
+            coverImg.onerror = function () { this.onerror = null; this.src = fallback; };
+
+            document.getElementById('gDownloads').textContent = (14250 + (game.id * 130)).toLocaleString();
+
+            // ★ Render Archive Password component if password exists ★
+            renderArchivePassword(game);
+
+            // ★ Render only buttons that have valid links ★
+            renderDownloadButtons(game);
+        }
+
+        // ---- Build download buttons dynamically ----
+        function renderDownloadButtons(game) {
+            // Define all possible buttons
+            const buttonDefs = [
+                {
+                    linkKey : 'game_link',
+                    label   : 'تحميل اللعبة',
+                    sub     : 'BASE GAME',
+                    icon    : 'fa-gamepad',
+                    iconColor: 'text-black',
+                    isPrimary: true   // cyan gradient style
+                },
+                {
+                    linkKey : 'update_link',
+                    label   : ' تحميل التحديث الأخير',
+                    sub     : 'UPDATE / PATCH',
+                    icon    : 'fa-rotate',
+                    iconColor: 'text-cyan-400',
+                    isPrimary: false
+                },
+                {
+                    linkKey : 'dlc_link',
+                    label   : ' تحميل الإضافات',
+                    sub     : 'DLCS PACK',
+                    icon    : 'fa-puzzle-piece',
+                    iconColor: 'text-purple-400',
+                    isPrimary: false
+                },
+                {
+                    linkKey : 'extra_1_url',
+                    label   : game.extra_1_label || 'إضافي 1',
+                    sub     : '',
+                    icon    : 'fa-plus-circle',
+                    iconColor: 'text-orange-400',
+                    isPrimary: false
+                },
+                {
+                    linkKey : 'extra_2_url',
+                    label   : game.extra_2_label || 'إضافي 2',
+                    sub     : '',
+                    icon    : 'fa-star',
+                    iconColor: 'text-pink-400',
+                    isPrimary: false
+                }
+            ];
+
+            // Filter: keep only buttons whose link is valid
+            const visibleBtns = buttonDefs.filter(def => isValidLink(game[def.linkKey]));
+
+            const grid = document.getElementById('downloadBtnsGrid');
+            grid.innerHTML = ''; // clear any previous content
+
+            // Set grid column class based on visible count
+            grid.className = ''; // reset
+            grid.classList.add('pt-4');
+            if (visibleBtns.length === 1) grid.classList.add('cols-1');
+            else if (visibleBtns.length === 2) grid.classList.add('cols-2');
+            else if (visibleBtns.length === 3) grid.classList.add('cols-3');
+            else if (visibleBtns.length === 4) grid.classList.add('cols-4');
+            else grid.classList.add('cols-5');
+
+            // Create each button element using secure DOM APIs
+            visibleBtns.forEach(def => {
+                const btn = document.createElement('button');
+
+                if (def.isPrimary) {
+                    // Cyan gradient style (Base Game)
+                    btn.className = [
+                        'relative group overflow-hidden rounded-2xl p-4',
+                        'bg-gradient-to-b from-cyan-500 to-blue-600',
+                        'font-black text-black',
+                        'shadow-[0_0_20px_rgba(102,252,241,0.2)]',
+                        'hover:shadow-[0_0_30px_rgba(102,252,241,0.5)]',
+                        'active:scale-95 transition-all duration-300'
+                    ].join(' ');
+                } else {
+                    // Dark card style (Update / DLC)
+                    btn.className = [
+                        'rounded-2xl p-4',
+                        'bg-[#151821] hover:bg-white/10',
+                        'border border-white/10',
+                        'font-bold text-gray-200',
+                        'active:scale-95 transition-all duration-300',
+                        'flex items-center justify-center gap-3'
+                    ].join(' ');
+                }
+
+                btn.onclick = () => startDownloadFunnel(def.linkKey);
+
+                // SECURITY: Zero-XSS DOM Rendering - use secure DOM APIs instead of innerHTML
+                const innerDiv = document.createElement('div');
+                innerDiv.className = 'relative z-10 flex items-center justify-center gap-3';
+                
+                const icon = document.createElement('i');
+                icon.className = `fa-solid ${def.icon} ${def.iconColor} text-xl`;
+                innerDiv.appendChild(icon);
+                
+                const textDiv = document.createElement('div');
+                textDiv.className = 'text-right';
+                
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'block text-sm';
+                labelSpan.textContent = def.label;
+                textDiv.appendChild(labelSpan);
+                
+                const subSpan = document.createElement('span');
+                subSpan.className = 'block text-[10px] opacity-70 font-semibold';
+                subSpan.textContent = def.sub;
+                textDiv.appendChild(subSpan);
+                
+                innerDiv.appendChild(textDiv);
+                btn.appendChild(innerDiv);
+
+                grid.appendChild(btn);
+            });
+
+            // Edge case: no links at all
+            if (visibleBtns.length === 0) {
+                const noLinksDiv = document.createElement('div');
+                noLinksDiv.className = 'col-span-full text-center py-8 text-gray-500 text-sm';
+                
+                const noLinksIcon = document.createElement('i');
+                noLinksIcon.className = 'fa-solid fa-link-slash text-2xl mb-2 block';
+                noLinksDiv.appendChild(noLinksIcon);
+                
+                const noLinksText = document.createElement('span');
+                noLinksText.textContent = 'لا توجد روابط تحميل متاحة لهذه اللعبة حالياً.';
+                noLinksDiv.appendChild(noLinksText);
+                
+                grid.appendChild(noLinksDiv);
+            }
+        }
+
+        function triggerError(msg) {
+            document.getElementById('pageLoader').classList.add('hidden');
+            document.getElementById('errorBox').classList.remove('hidden');
+            // SECURITY: Use textContent instead of innerText
+            document.getElementById('errorText').textContent = msg;
+        }
+
+        // ---- Download Funnel ----
+        function startDownloadFunnel(linkKey) {
+            if (!currentGameData) return;
+            const url = currentGameData[linkKey];
+            if (!isValidLink(url)) return;
+
+            // SECURITY: Apply protocol enforcement before redirect
+            const secureUrl = getSecureUrl(url.trim());
+            if (!secureUrl) {
+                console.error('Blocked insecure redirect attempt:', url);
+                triggerError("رابط التحميل غير آمن");
+                return;
+            }
+
+            activeUrlToRedirect = secureUrl;
+            openModal();
+            startCountdown();
+        }
+
+        function startCountdown() {
+            const btn    = document.getElementById('finalDownloadBtn');
+            const btnTxt = document.getElementById('btnText');
+            const btnIco = document.getElementById('btnIcon');
+            const secEl  = document.getElementById('secondsLeft');
+            const ring   = document.getElementById('ringFill');
+
+            btn.disabled     = true;
+            btn.className    = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btnIco.className = "fa-solid fa-hourglass-half";
+            // SECURITY: Use textContent instead of innerText
+            btnTxt.textContent = `يرجى الانتظار (${COUNTDOWN_START})`;
+            secEl.textContent  = COUNTDOWN_START;
+            ring.style.strokeDasharray  = CIRCUMFERENCE;
+            ring.style.strokeDashoffset = 0;
+            ring.style.stroke = "#66fcf1";
+
+            clearInterval(countdownTimer);
+            let count = COUNTDOWN_START;
+
+            countdownTimer = setInterval(() => {
+                count--;
+
+                secEl.textContent  = count;
+                btnTxt.textContent = count > 0 ? `يرجى الانتظار (${count})` : "يرجى الانتظار (0)";
+
+                const progress = count / COUNTDOWN_START;
+                ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+                if (count <= 0) {
+                    ring.style.stroke = "#10b981";
+                } else if (count <= 3) {
+                    ring.style.stroke = "#f59e0b";
+                }
+
+                if (count <= 0) {
+                    clearInterval(countdownTimer);
+                    activateDownloadButton();
+                }
+            }, 1000);
+        }
+
+        function activateDownloadButton() {
+            const btn    = document.getElementById('finalDownloadBtn');
+            const btnTxt = document.getElementById('btnText');
+            const btnIco = document.getElementById('btnIcon');
+            const secEl  = document.getElementById('secondsLeft');
+
+            secEl.textContent   = "✓";
+            secEl.style.color = "#10b981";
+
+            btn.disabled  = false;
+            btn.className = "btn-ready w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btnIco.className = "fa-solid fa-download";
+            btnTxt.textContent = "انتقل إلى رابط التحميل — Download Now";
+
+            btn.onclick = () => {
+                triggerOptionalPopUnder();
+                window.open(activeUrlToRedirect, '_blank');
+                closeAdModal();
+            };
+        }
+
+        // ---- Modal open / close ----
+        function openModal() {
+            const modal = document.getElementById('adModal');
+            const card  = document.getElementById('modalContainer');
+
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.style.opacity  = '1';
+                    card.style.transform = 'scale(1)';
+                });
+            });
+        }
+
+        function closeAdModal() {
+            clearInterval(countdownTimer);
+
+            const modal = document.getElementById('adModal');
+            const card  = document.getElementById('modalContainer');
+
+            modal.style.opacity  = '0';
+            card.style.transform = 'scale(0.92)';
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                resetModalState();
+            }, 300);
+        }
+
+        function resetModalState() {
+            const btn    = document.getElementById('finalDownloadBtn');
+            const btnTxt = document.getElementById('btnText');
+            const btnIco = document.getElementById('btnIcon');
+            const secEl  = document.getElementById('secondsLeft');
+            const ring   = document.getElementById('ringFill');
+
+            btn.disabled      = true;
+            btn.className     = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btn.onclick       = null;
+            btnIco.className  = "fa-solid fa-hourglass-half";
+            // SECURITY: Use textContent instead of innerText
+            btnTxt.textContent  = `يرجى الانتظار (${COUNTDOWN_START})`;
+            secEl.textContent   = COUNTDOWN_START;
+            secEl.style.color = "#66fcf1";
+            ring.style.strokeDashoffset = 0;
+            ring.style.stroke = "#66fcf1";
+        }
+
+        // ---- Render Archive Password Component ----
+        function renderArchivePassword(game) {
+            const passwordBox = document.getElementById('archivePasswordBox');
+            const passwordValue = document.getElementById('passwordValue');
+            
+            // Check if password field exists and is not empty/null/undefined
+            const hasPassword = game.password && typeof game.password === 'string' && game.password.trim() !== '';
+            
+            if (hasPassword) {
+                // SECURITY: Use textContent instead of innerText
+                passwordValue.textContent = game.password.trim();
+                passwordBox.classList.remove('hidden');
+            } else {
+                passwordBox.classList.add('hidden');
+            }
+        }
+
+        // ---- Copy Password to Clipboard ----
+        function copyPassword() {
+            // SECURITY: Use textContent instead of innerText
+            const passwordText = document.getElementById('passwordValue').textContent;
+            const copyBtn = document.getElementById('copyPasswordBtn');
+            const copyIcon = document.getElementById('copyIcon');
+            const copyText = document.getElementById('copyText');
+            
+            navigator.clipboard.writeText(passwordText).then(() => {
+                triggerOptionalPopUnder();
+                // Change to success state
+                copyIcon.className = 'fa-solid fa-check text-green-400';
+                copyText.textContent = 'تم النسخ!';
+                copyBtn.classList.add('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+                copyBtn.classList.remove('border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
+                
+                // Revert after 2 seconds
+                setTimeout(() => {
+                    copyIcon.className = 'fa-solid fa-clipboard';
+                    copyText.textContent = 'Copy';
+                    copyBtn.classList.remove('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+                    copyBtn.classList.add('border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy password:', err);
+            });
+        }
+
+        document.getElementById('modalBackdrop').addEventListener('click', closeAdModal);
+    </script>
+
+    <!-- ============================================================
+         AD-MONETIZATION PLACEHOLDERS
+         - Social Bar Ad Slot: Reserved for Monetag/Adsterra social bar scripts
+         - Pop-Under Trigger: Hook function defined in script section
+         - Direct Link Ads: Can be injected via triggerOptionalPopUnder()
+    ============================================================ -->
+</body>
+</html>
