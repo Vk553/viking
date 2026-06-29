@@ -17,10 +17,10 @@
                 extend: {
                     fontFamily: { 'cairo': ['Cairo', 'sans-serif'] },
                     colors: {
-                        darkBg: '#0b0c10',
-                        cardBg: '#1f2833',
+                        darkBg:     '#0b0c10',
+                        cardBg:     '#1f2833',
                         neonAccent: '#66fcf1',
-                        subText: '#c5c6c7'
+                        subText:    '#c5c6c7'
                     }
                 }
             }
@@ -36,12 +36,8 @@
         ::-webkit-scrollbar-thumb:hover { background: #66fcf1; }
 
         /* --- Modal Overlay --- */
-        #adModal {
-            transition: opacity 0.3s ease;
-        }
-        #adModal.hidden {
-            display: none !important;
-        }
+        #adModal { transition: opacity 0.3s ease; }
+        #adModal.hidden { display: none !important; }
 
         /* --- Modal Card --- */
         #modalContainer {
@@ -56,7 +52,7 @@
                 inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
-        /* --- Ad Banner Slot --- */
+        /* --- Ad Banner Slot (Modal 300x250) --- */
         #adBannerSlot {
             width: 300px;
             height: 250px;
@@ -73,14 +69,8 @@
         }
 
         /* --- Countdown Ring --- */
-        .countdown-ring {
-            position: relative;
-            width: 72px;
-            height: 72px;
-        }
-        .countdown-ring svg {
-            transform: rotate(-90deg);
-        }
+        .countdown-ring { position: relative; width: 72px; height: 72px; }
+        .countdown-ring svg { transform: rotate(-90deg); }
         .countdown-ring .ring-bg {
             fill: none;
             stroke: rgba(102, 252, 241, 0.1);
@@ -108,7 +98,7 @@
             text-shadow: 0 0 12px rgba(102,252,241,0.6);
         }
 
-        /* --- Download Button States --- */
+        /* --- Download Button States (Modal) --- */
         #finalDownloadBtn {
             transition: background 0.5s ease, box-shadow 0.5s ease, color 0.3s ease, transform 0.1s ease;
         }
@@ -131,9 +121,7 @@
             transform: scale(1.02);
             box-shadow: 0 0 40px rgba(16,185,129,0.7), 0 0 80px rgba(16,185,129,0.3);
         }
-        #finalDownloadBtn.btn-ready:active {
-            transform: scale(0.97);
-        }
+        #finalDownloadBtn.btn-ready:active { transform: scale(0.97); }
 
         @keyframes pulse-green {
             0%, 100% { box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2); }
@@ -153,20 +141,103 @@
             animation: scan 2s linear infinite;
         }
 
-        /* --- Dynamic grid for download buttons --- */
-        #downloadBtnsGrid {
-            display: grid;
-            gap: 1rem;
+        /* --- Primary (Funnel) Button — glowing cyan gradient --- */
+        .btn-primary-funnel {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            font-weight: 900;
+            color: #000;
+            box-shadow: 0 0 20px rgba(102,252,241,0.25);
+            transition: box-shadow 0.3s ease, transform 0.15s ease;
+            cursor: pointer;
+            border: none;
+            width: 100%;
         }
-        /* 1 visible button → full width */
+        .btn-primary-funnel:hover {
+            box-shadow: 0 0 36px rgba(102,252,241,0.55), 0 0 70px rgba(102,252,241,0.2);
+        }
+        .btn-primary-funnel:active { transform: scale(0.96); }
+
+        /* Shimmer sweep on primary button */
+        .btn-primary-funnel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%);
+            background-size: 200% 100%;
+            animation: shimmer 2.4s infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+
+        /* --- Mirror (Direct) Button — clean trustworthy look --- */
+        .btn-mirror-direct {
+            border-radius: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            font-weight: 700;
+            color: #e2e8f0;
+            transition: background 0.25s ease, border-color 0.25s ease, transform 0.15s ease;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        .btn-mirror-direct:hover {
+            background: rgba(255,255,255,0.09);
+            border-color: rgba(255,255,255,0.22);
+        }
+        .btn-mirror-direct:active { transform: scale(0.96); }
+
+        /* "Direct / Fast" badge on mirror button */
+        .badge-direct {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #34d399;
+            background: rgba(52,211,153,0.12);
+            border: 1px solid rgba(52,211,153,0.3);
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+
+        /* --- Secondary dark buttons (Update / DLC / Extras) --- */
+        .btn-secondary-dark {
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #151821;
+            border: 1px solid rgba(255,255,255,0.08);
+            font-weight: 700;
+            color: #cbd5e1;
+            transition: background 0.25s ease, transform 0.15s ease;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        .btn-secondary-dark:hover { background: rgba(255,255,255,0.09); }
+        .btn-secondary-dark:active { transform: scale(0.96); }
+
+        /* --- Dynamic grid for download buttons --- */
+        #downloadBtnsGrid { display: grid; gap: 1rem; }
         #downloadBtnsGrid.cols-1 { grid-template-columns: 1fr; }
-        /* 2 visible buttons → 2 equal cols */
         #downloadBtnsGrid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-        /* 3 visible buttons → 3 equal cols */
         #downloadBtnsGrid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-        /* 4 visible buttons → 2x2 grid */
         #downloadBtnsGrid.cols-4 { grid-template-columns: repeat(2, 1fr); }
-        /* 5 visible buttons → 3 cols (2 in first row, 3 in second) */
         #downloadBtnsGrid.cols-5 { grid-template-columns: repeat(3, 1fr); }
 
         @media (max-width: 640px) {
@@ -176,6 +247,22 @@
             #downloadBtnsGrid.cols-5 {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* --- Bottom Native Ad Slot — "You Might Also Like" empty state --- */
+        #ad-slot-main-bottom {
+            background: linear-gradient(135deg, rgba(21,24,33,0.7), rgba(15,17,26,0.85));
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 1.25rem;
+        }
+        .native-placeholder-card {
+            width: 100%;
+            max-width: 140px;
+            height: 90px;
+            background: rgba(255,255,255,0.04);
+            border: 1px dashed rgba(255,255,255,0.08);
+            border-radius: 12px;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -263,19 +350,47 @@
                 </div>
             </div>
 
-            <!-- ===== Main Page Banner Slot (Above Buttons Grid) ===== -->
+            <!-- ===== TOP BANNER AD SLOT =====
+                 Placement: Above the download buttons grid.
+                 Recommended size: 728x90 (leaderboard, desktop) or 300x250 (mobile).
+                 Supported networks: HilltopAds Banner, Monetag Display, Google AdSense.
+                 HOW TO INSERT: Replace the inner comment block with your ad network <script> tag.
+                 The container enforces min-height and centers the ad unit automatically.
+            ===== -->
             <div id="ad-slot-main-top" class="w-full bg-[#151821]/60 border border-dashed border-cyan-500/20 rounded-2xl p-4 my-6 flex flex-col items-center justify-center min-h-[100px] overflow-hidden select-none">
                 <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Advertisement</span>
+                <!-- ▼▼▼ INSERT TOP BANNER AD TAG HERE ▼▼▼ -->
+                <!-- Example: HilltopAds / Monetag 728x90 or 300x250 banner script -->
+                <!-- ▲▲▲ END TOP BANNER AD TAG ▲▲▲ -->
             </div>
 
-            <!-- ===== Download Buttons (rendered dynamically) ===== -->
+            <!-- ===== DOWNLOAD BUTTONS (rendered dynamically by renderDownloadButtons()) ===== -->
             <div id="downloadBtnsGrid" class="pt-4">
-                <!-- Buttons are injected here by renderDownloadButtons() -->
+                <!-- Buttons injected by JS -->
             </div>
 
-            <!-- ===== Native Ad Slot (Below Buttons Grid) ===== -->
-            <div id="ad-slot-main-bottom" class="w-full bg-[#151821]/40 border border-white/5 rounded-2xl p-4 mt-8 flex flex-col items-center justify-center min-h-[180px] overflow-hidden select-none">
-                <span class="text-[10px] text-gray-600 font-mono tracking-widest uppercase mb-1">Sponsored Content</span>
+            <!-- ===== BOTTOM NATIVE AD SLOT =====
+                 Placement: Below the download buttons grid.
+                 Purpose: Mimics a "You Might Also Like / Related Games" widget.
+                 Supported networks: MGID Native, Monetag Native, Outbrain.
+                 HOW TO INSERT: Replace the placeholder cards section below with your native ad script tag.
+                 The outer container and header label should remain intact.
+            ===== -->
+            <div id="ad-slot-main-bottom" class="w-full p-5 mt-8 min-h-[180px] overflow-hidden select-none">
+                <!-- Header label — keep this in place even after inserting native ad tag -->
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">قد يعجبك أيضاً / You Might Also Like</span>
+                    <div class="flex-1 border-t border-white/5"></div>
+                    <span class="text-[9px] text-gray-600 uppercase tracking-wider">Sponsored</span>
+                </div>
+                <!-- ▼▼▼ INSERT NATIVE AD TAG HERE (MGID / Monetag Native / Outbrain) ▼▼▼ -->
+                <!-- Empty-state placeholder cards — remove these once a real native tag is inserted -->
+                <div class="flex gap-3 overflow-hidden">
+                    <div class="native-placeholder-card"></div>
+                    <div class="native-placeholder-card opacity-70"></div>
+                    <div class="native-placeholder-card opacity-40"></div>
+                </div>
+                <!-- ▲▲▲ END NATIVE AD TAG ▲▲▲ -->
             </div>
 
             <!-- ===== Social Media Section ===== -->
@@ -285,17 +400,14 @@
                     تابع حساباتنا / Follow Us
                 </h3>
                 <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-                    <!-- YouTube Card -->
                     <a href="https://www.youtube.com/@vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                         <i class="fa-brands fa-youtube text-3xl text-red-500 group-hover:scale-110 transition-transform"></i>
                         <span class="text-xs font-bold text-gray-300 group-hover:text-white">YouTube</span>
                     </a>
-                    <!-- Telegram Card -->
                     <a href="https://t.me/Vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                         <i class="fa-brands fa-telegram text-3xl text-[#229ED9] group-hover:scale-110 transition-transform"></i>
                         <span class="text-xs font-bold text-gray-300 group-hover:text-white">Telegram</span>
                     </a>
-                    <!-- Discord Card -->
                     <a href="https://discord.gg/DsvwpTgaj" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                         <i class="fa-brands fa-discord text-3xl text-[#5865F2] group-hover:scale-110 transition-transform"></i>
                         <span class="text-xs font-bold text-gray-300 group-hover:text-white">Discord</span>
@@ -319,7 +431,7 @@
          class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden"
          style="background: rgba(0,0,0,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0;">
 
-        <!-- Clicking the backdrop closes the modal -->
+        <!-- Backdrop click closes modal -->
         <div id="modalBackdrop" class="absolute inset-0 cursor-pointer"></div>
 
         <!-- Modal Card -->
@@ -343,38 +455,39 @@
             <!-- Body -->
             <div class="flex flex-col items-center gap-5 p-6">
 
-                <!-- Hint text -->
                 <p class="text-[11px] text-gray-400 text-center leading-relaxed">
                     يرجى الانتظار، جاري تجهيز رابط التحميل الآمن...
                 </p>
 
-                <!-- ★ Ad Banner Slot 300×250 ★ -->
+                <!-- ===== IN-MODAL AD SLOT 300×250 =====
+                     Placement: Captive attention during the 10-second countdown wait.
+                     Supported networks: HilltopAds, Monetag, Google AdSense (if approved).
+                     HOW TO INSERT: Replace the inner comment block with your ad tag script.
+                     Do NOT change the outer #adBannerSlot div dimensions (300x250 enforced by CSS).
+                ===== -->
                 <div id="adBannerSlot">
                     <div class="scan-line"></div>
-                    <!-- ▼▼▼ ضع كود إعلان Google AdSense أو PropellerAds هنا ▼▼▼ -->
-                    <!--
-                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-                    <ins class="adsbygoogle"
-                         style="display:inline-block;width:300px;height:250px"
-                         data-ad-client="ca-pub-XXXXXXXXXX"
-                         data-ad-slot="XXXXXXXXXX"></ins>
-                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    <!-- ▼▼▼ INSERT MODAL 300x250 AD TAG HERE ▼▼▼ -->
+                    <!-- Example:
+                    <script async src="...network-script..."></script>
+                    <ins ...></ins>
                     -->
+                    <!-- ▲▲▲ END MODAL AD TAG ▲▲▲ -->
                     <i class="fa-solid fa-rectangle-ad text-3xl text-white/10"></i>
                     <span class="text-[11px] text-gray-600 font-mono">Ad Slot — 300 × 250</span>
-                    <span class="text-[10px] text-gray-700">Google AdSense / PropellerAds</span>
+                    <span class="text-[10px] text-gray-700">HilltopAds / Monetag</span>
                 </div>
 
                 <!-- Countdown Ring -->
                 <div class="countdown-ring" id="countdownRing">
                     <svg width="72" height="72" viewBox="0 0 72 72">
-                        <circle class="ring-bg" cx="36" cy="36" r="30.2"/>
+                        <circle class="ring-bg"   cx="36" cy="36" r="30.2"/>
                         <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30.2"/>
                     </svg>
                     <div class="ring-text" id="secondsLeft">10</div>
                 </div>
 
-                <!-- Download Button -->
+                <!-- Final Download Button (inside modal) -->
                 <button id="finalDownloadBtn"
                         class="btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5"
                         disabled>
@@ -395,24 +508,27 @@
 
     <!-- ===== SCRIPTS ===== -->
     <script>
-        const API_BASE_URL    = "https://vk-store.onrender.com/api/games";
+        // ─── CONFIG ───────────────────────────────────────────────────────────────
+        // Swap this with your live Render production API URL when deploying.
+        const API_BASE_URL    = "https://your-app-name.onrender.com/api/games";
         const COUNTDOWN_START = 10;
         const CIRCUMFERENCE   = 2 * Math.PI * 30.2; // ≈ 189.7
 
+        // ─── STATE ────────────────────────────────────────────────────────────────
         let currentGameData     = null;
         let activeUrlToRedirect = "";
         let countdownTimer      = null;
 
-        // --- Fetch game id from URL ---
+        // ─── URL PARAMS ───────────────────────────────────────────────────────────
         const urlParams = new URLSearchParams(window.location.search);
         const gameId    = urlParams.get('id');
 
-        // SECURITY: Strict ID Parameter Type-Guarding (Anti Path-Traversal)
+        // ─── SECURITY: Strict ID type guard (anti path-traversal) ─────────────────
         function isValidGameId(id) {
             return /^\d+$/.test(id);
         }
 
-        // SECURITY: Protocol Enforcement for Redirects (Anti Malicious JS-Protocol)
+        // ─── SECURITY: Protocol enforcement for redirects (anti JS-protocol) ──────
         function getSecureUrl(rawUrl) {
             try {
                 const parsed = new URL(rawUrl, window.location.origin);
@@ -427,13 +543,42 @@
             }
         }
 
-        // AD-MONETIZATION: Pop-Under Trigger Hook
+        // ─── POP-UNDER: 24-hour localStorage gate ─────────────────────────────────
+        // This function NEVER fires on page load.
+        // It fires ONLY when called explicitly from:
+        //   (a) finalDownloadBtn click (inside modal)  → activateDownloadButton()
+        //   (b) Mirror / Direct Download button click  → handleMirrorClick()
+        //   (c) Copy Password button click             → copyPassword()
         function triggerOptionalPopUnder() {
-            /* Pop-under networks auto-attach to window clicks; this hook is reserved for custom direct-link pop triggers */
+            const STORAGE_KEY   = 'vkstore_popunder_last';
+            const WINDOW_MS     = 24 * 60 * 60 * 1000; // 24 hours in ms
+            const now           = Date.now();
+
+            try {
+                const lastFired = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+                if (now - lastFired < WINDOW_MS) {
+                    // Still within the 24-hour window — skip pop-under
+                    return;
+                }
+                // Outside window — fire and record timestamp
+                localStorage.setItem(STORAGE_KEY, String(now));
+            } catch (e) {
+                // localStorage unavailable (private mode etc.) — skip silently
+                return;
+            }
+
+            // ▼▼▼ INSERT POP-UNDER NETWORK TRIGGER HERE ▼▼▼
+            // This is the single execution point for your pop-under network.
+            // HilltopAds / ClickAdu / Adsterra pop-under scripts typically
+            // attach to window and fire automatically on the next click event.
+            // If your network requires a manual trigger call, place it here.
+            // Example (Adsterra / HilltopAds manual trigger):
+            //   if (typeof openPopunder === 'function') { openPopunder(); }
+            // ▲▲▲ END POP-UNDER TRIGGER ▲▲▲
         }
 
+        // ─── INIT ─────────────────────────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', () => {
-            // SECURITY: Validate gameId before processing
             if (!gameId || !isValidGameId(gameId)) {
                 triggerError("رابط غير صالح");
                 return;
@@ -441,20 +586,19 @@
             fetchGameDetails(gameId);
         });
 
-        // ---- API ----
+        // ─── API ──────────────────────────────────────────────────────────────────
         async function fetchGameDetails(id) {
             try {
                 const res = await fetch(`${API_BASE_URL}/${id}`);
                 if (!res.ok) throw new Error();
-                
-                // SECURITY: Defensive JSON Parsing
+
                 const payload = await res.json();
-                const game = payload.data ? payload.data : payload;
-                
+                const game    = payload.data ? payload.data : payload;
+
                 if (!game || typeof game !== 'object') {
                     throw new Error('Invalid game data structure');
                 }
-                
+
                 currentGameData = game;
                 renderPageUI(currentGameData);
             } catch {
@@ -462,17 +606,16 @@
             }
         }
 
-        // ---- Helper: is a link value valid? ----
+        // ─── HELPER: valid link check ──────────────────────────────────────────────
         function isValidLink(url) {
             return url && typeof url === 'string' && url.trim() !== '' && url.trim().toLowerCase() !== 'null';
         }
 
-        // ---- Render UI ----
+        // ─── RENDER PAGE ──────────────────────────────────────────────────────────
         function renderPageUI(game) {
             document.getElementById('pageLoader').classList.add('hidden');
             document.getElementById('gameContent').classList.remove('hidden');
 
-            // SECURITY: Use textContent instead of innerText to prevent DOM clobbering
             document.getElementById('gTitle').textContent   = game.title;
             document.getElementById('gConsole').textContent = game.console;
             document.getElementById('gSize').textContent    = game.size    || 'غير محدد';
@@ -485,160 +628,231 @@
 
             document.getElementById('gDownloads').textContent = (14250 + (game.id * 130)).toLocaleString();
 
-            // ★ Render Archive Password component if password exists ★
             renderArchivePassword(game);
-
-            // ★ Render only buttons that have valid links ★
             renderDownloadButtons(game);
         }
 
-        // ---- Build download buttons dynamically ----
+        // ─── RENDER DOWNLOAD BUTTONS ──────────────────────────────────────────────
+        // Button strategy (Plan B):
+        //   • game_link   → PRIMARY FUNNEL button  → opens countdown modal → monetized URL shortener
+        //   • update_link → MIRROR / DIRECT button → instant new tab + pop-under trigger (once/24h)
+        //   • dlc_link, extra_1_url, extra_2_url → SECONDARY DARK buttons → open countdown modal
+        //
+        // The "update_link" is deliberately repurposed as the high-trust direct mirror.
+        // If you have a dedicated mirror link field in your API, swap 'update_link' for it here.
+
         function renderDownloadButtons(game) {
-            // Define all possible buttons
+            const grid = document.getElementById('downloadBtnsGrid');
+            grid.innerHTML = '';
+            grid.className = 'pt-4';
+
+            // ── Button definitions ─────────────────────────────────────────────────
             const buttonDefs = [
                 {
-                    linkKey : 'game_link',
-                    label   : 'تحميل اللعبة',
-                    sub     : 'BASE GAME',
-                    icon    : 'fa-gamepad',
-                    iconColor: 'text-black',
-                    isPrimary: true   // cyan gradient style
+                    linkKey   : 'game_link',
+                    label     : 'تحميل اللعبة',
+                    sub       : 'BASE GAME',
+                    icon      : 'fa-gamepad',
+                    type      : 'primary'   // → opens countdown modal funnel
                 },
                 {
-                    linkKey : 'update_link',
-                    label   : ' تحميل التحديث الأخير',
-                    sub     : 'UPDATE / PATCH',
-                    icon    : 'fa-rotate',
-                    iconColor: 'text-cyan-400',
-                    isPrimary: false
+                    linkKey   : 'update_link',
+                    label     : 'تحميل التحديث',
+                    sub       : 'DOWNLOAD UPDATE',
+                    icon      : 'fa-bolt',
+                    type      : 'mirror'    // → instant open + optional pop-under
                 },
                 {
-                    linkKey : 'dlc_link',
-                    label   : ' تحميل الإضافات',
-                    sub     : 'DLCS PACK',
-                    icon    : 'fa-puzzle-piece',
-                    iconColor: 'text-purple-400',
-                    isPrimary: false
+                    linkKey   : 'dlc_link',
+                    label     : 'تحميل الإضافات',
+                    sub       : 'DLCS PACK',
+                    icon      : 'fa-puzzle-piece',
+                    iconColor : 'text-purple-400',
+                    type      : 'secondary'
                 },
                 {
-                    linkKey : 'extra_1_url',
-                    label   : game.extra_1_label || 'إضافي 1',
-                    sub     : '',
-                    icon    : 'fa-plus-circle',
-                    iconColor: 'text-orange-400',
-                    isPrimary: false
+                    linkKey   : 'extra_1_url',
+                    label     : game.extra_1_label || 'إضافي 1',
+                    sub       : '',
+                    icon      : 'fa-plus-circle',
+                    iconColor : 'text-orange-400',
+                    type      : 'secondary'
                 },
                 {
-                    linkKey : 'extra_2_url',
-                    label   : game.extra_2_label || 'إضافي 2',
-                    sub     : '',
-                    icon    : 'fa-star',
-                    iconColor: 'text-pink-400',
-                    isPrimary: false
+                    linkKey   : 'extra_2_url',
+                    label     : game.extra_2_label || 'إضافي 2',
+                    sub       : '',
+                    icon      : 'fa-star',
+                    iconColor : 'text-pink-400',
+                    type      : 'secondary'
                 }
             ];
 
-            // Filter: keep only buttons whose link is valid
+            // ── Filter to only buttons with valid links ────────────────────────────
             const visibleBtns = buttonDefs.filter(def => isValidLink(game[def.linkKey]));
 
-            const grid = document.getElementById('downloadBtnsGrid');
-            grid.innerHTML = ''; // clear any previous content
+            // ── Set grid column class ──────────────────────────────────────────────
+            const count = visibleBtns.length;
+            if      (count === 1) grid.classList.add('cols-1');
+            else if (count === 2) grid.classList.add('cols-2');
+            else if (count === 3) grid.classList.add('cols-3');
+            else if (count === 4) grid.classList.add('cols-4');
+            else                  grid.classList.add('cols-5');
 
-            // Set grid column class based on visible count
-            grid.className = ''; // reset
-            grid.classList.add('pt-4');
-            if (visibleBtns.length === 1) grid.classList.add('cols-1');
-            else if (visibleBtns.length === 2) grid.classList.add('cols-2');
-            else if (visibleBtns.length === 3) grid.classList.add('cols-3');
-            else if (visibleBtns.length === 4) grid.classList.add('cols-4');
-            else grid.classList.add('cols-5');
-
-            // Create each button element using secure DOM APIs
+            // ── Build each button element ──────────────────────────────────────────
             visibleBtns.forEach(def => {
-                const btn = document.createElement('button');
+                const rawUrl = game[def.linkKey].trim();
 
-                if (def.isPrimary) {
-                    // Cyan gradient style (Base Game)
-                    btn.className = [
-                        'relative group overflow-hidden rounded-2xl p-4',
-                        'bg-gradient-to-b from-cyan-500 to-blue-600',
-                        'font-black text-black',
-                        'shadow-[0_0_20px_rgba(102,252,241,0.2)]',
-                        'hover:shadow-[0_0_30px_rgba(102,252,241,0.5)]',
-                        'active:scale-95 transition-all duration-300'
-                    ].join(' ');
+                if (def.type === 'primary') {
+                    // ── PRIMARY: glowing cyan gradient, opens countdown modal ────────
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-primary-funnel';
+                    btn.setAttribute('aria-label', def.label);
+
+                    const inner = document.createElement('div');
+                    inner.className = 'relative z-10 flex items-center justify-center gap-3';
+
+                    const icon = document.createElement('i');
+                    icon.className = `fa-solid ${def.icon} text-black text-xl`;
+                    inner.appendChild(icon);
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text-right';
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'block text-sm text-black';
+                    labelSpan.textContent = def.label;
+                    textDiv.appendChild(labelSpan);
+
+                    const subSpan = document.createElement('span');
+                    subSpan.className = 'block text-[10px] opacity-60 font-semibold text-black';
+                    subSpan.textContent = def.sub;
+                    textDiv.appendChild(subSpan);
+
+                    inner.appendChild(textDiv);
+                    btn.appendChild(inner);
+
+                    btn.addEventListener('click', () => startDownloadFunnel(def.linkKey));
+                    grid.appendChild(btn);
+
+                } else if (def.type === 'mirror') {
+                    // ── MIRROR: clean trustworthy look, instant open + pop-under ─────
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-mirror-direct';
+                    btn.setAttribute('aria-label', def.label);
+
+                    const icon = document.createElement('i');
+                    icon.className = `fa-solid ${def.icon} text-emerald-400 text-lg`;
+                    btn.appendChild(icon);
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text-right flex flex-col';
+
+                    const topRow = document.createElement('div');
+                    topRow.className = 'flex items-center gap-2';
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'text-sm font-bold text-gray-100';
+                    labelSpan.textContent = def.label;
+                    topRow.appendChild(labelSpan);
+
+                    // "Direct | Fast" badge
+                    const badge = document.createElement('span');
+                    badge.className = 'badge-direct';
+
+                    const badgeIcon = document.createElement('i');
+                    badgeIcon.className = 'fa-solid fa-check text-[8px]';
+                    badge.appendChild(badgeIcon);
+
+                    const badgeText = document.createTextNode('مباشر');
+                    badge.appendChild(badgeText);
+                    topRow.appendChild(badge);
+
+                    textDiv.appendChild(topRow);
+
+                    const subSpan = document.createElement('span');
+                    subSpan.className = 'text-[10px] text-gray-500 font-semibold mt-0.5';
+                    subSpan.textContent = def.sub;
+                    textDiv.appendChild(subSpan);
+
+                    btn.appendChild(textDiv);
+
+                    btn.addEventListener('click', () => handleMirrorClick(rawUrl));
+                    grid.appendChild(btn);
+
                 } else {
-                    // Dark card style (Update / DLC)
-                    btn.className = [
-                        'rounded-2xl p-4',
-                        'bg-[#151821] hover:bg-white/10',
-                        'border border-white/10',
-                        'font-bold text-gray-200',
-                        'active:scale-95 transition-all duration-300',
-                        'flex items-center justify-center gap-3'
-                    ].join(' ');
+                    // ── SECONDARY DARK: update / DLC / extras → countdown modal ───────
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-secondary-dark';
+                    btn.setAttribute('aria-label', def.label);
+
+                    const icon = document.createElement('i');
+                    icon.className = `fa-solid ${def.icon} ${def.iconColor || 'text-cyan-400'} text-xl`;
+                    btn.appendChild(icon);
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text-right';
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'block text-sm';
+                    labelSpan.textContent = def.label;
+                    textDiv.appendChild(labelSpan);
+
+                    const subSpan = document.createElement('span');
+                    subSpan.className = 'block text-[10px] opacity-60 font-semibold';
+                    subSpan.textContent = def.sub;
+                    textDiv.appendChild(subSpan);
+
+                    btn.appendChild(textDiv);
+
+                    btn.addEventListener('click', () => startDownloadFunnel(def.linkKey));
+                    grid.appendChild(btn);
                 }
-
-                btn.onclick = () => startDownloadFunnel(def.linkKey);
-
-                // SECURITY: Zero-XSS DOM Rendering - use secure DOM APIs instead of innerHTML
-                const innerDiv = document.createElement('div');
-                innerDiv.className = 'relative z-10 flex items-center justify-center gap-3';
-                
-                const icon = document.createElement('i');
-                icon.className = `fa-solid ${def.icon} ${def.iconColor} text-xl`;
-                innerDiv.appendChild(icon);
-                
-                const textDiv = document.createElement('div');
-                textDiv.className = 'text-right';
-                
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'block text-sm';
-                labelSpan.textContent = def.label;
-                textDiv.appendChild(labelSpan);
-                
-                const subSpan = document.createElement('span');
-                subSpan.className = 'block text-[10px] opacity-70 font-semibold';
-                subSpan.textContent = def.sub;
-                textDiv.appendChild(subSpan);
-                
-                innerDiv.appendChild(textDiv);
-                btn.appendChild(innerDiv);
-
-                grid.appendChild(btn);
             });
 
-            // Edge case: no links at all
+            // ── Edge case: no links ────────────────────────────────────────────────
             if (visibleBtns.length === 0) {
                 const noLinksDiv = document.createElement('div');
                 noLinksDiv.className = 'col-span-full text-center py-8 text-gray-500 text-sm';
-                
+
                 const noLinksIcon = document.createElement('i');
                 noLinksIcon.className = 'fa-solid fa-link-slash text-2xl mb-2 block';
                 noLinksDiv.appendChild(noLinksIcon);
-                
+
                 const noLinksText = document.createElement('span');
                 noLinksText.textContent = 'لا توجد روابط تحميل متاحة لهذه اللعبة حالياً.';
                 noLinksDiv.appendChild(noLinksText);
-                
+
                 grid.appendChild(noLinksDiv);
             }
         }
 
+        // ─── MIRROR CLICK HANDLER ─────────────────────────────────────────────────
+        // Mirror button: validate → fire pop-under (once/24h) → open direct URL instantly.
+        // No modal, no countdown. Maximum trust signal for the user.
+        function handleMirrorClick(rawUrl) {
+            const secureUrl = getSecureUrl(rawUrl);
+            if (!secureUrl) {
+                triggerError("رابط التحميل غير آمن");
+                return;
+            }
+            triggerOptionalPopUnder(); // once per 24h gate enforced inside
+            window.open(secureUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        // ─── ERROR HANDLER ────────────────────────────────────────────────────────
         function triggerError(msg) {
             document.getElementById('pageLoader').classList.add('hidden');
             document.getElementById('errorBox').classList.remove('hidden');
-            // SECURITY: Use textContent instead of innerText
             document.getElementById('errorText').textContent = msg;
         }
 
-        // ---- Download Funnel ----
+        // ─── DOWNLOAD FUNNEL (primary + secondary buttons) ────────────────────────
         function startDownloadFunnel(linkKey) {
             if (!currentGameData) return;
             const url = currentGameData[linkKey];
             if (!isValidLink(url)) return;
 
-            // SECURITY: Apply protocol enforcement before redirect
             const secureUrl = getSecureUrl(url.trim());
             if (!secureUrl) {
                 console.error('Blocked insecure redirect attempt:', url);
@@ -651,6 +865,7 @@
             startCountdown();
         }
 
+        // ─── COUNTDOWN ────────────────────────────────────────────────────────────
         function startCountdown() {
             const btn    = document.getElementById('finalDownloadBtn');
             const btnTxt = document.getElementById('btnText');
@@ -658,33 +873,28 @@
             const secEl  = document.getElementById('secondsLeft');
             const ring   = document.getElementById('ringFill');
 
-            btn.disabled     = true;
-            btn.className    = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btnIco.className = "fa-solid fa-hourglass-half";
-            // SECURITY: Use textContent instead of innerText
-            btnTxt.textContent = `يرجى الانتظار (${COUNTDOWN_START})`;
-            secEl.textContent  = COUNTDOWN_START;
+            btn.disabled            = true;
+            btn.className           = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btnIco.className        = "fa-solid fa-hourglass-half";
+            btnTxt.textContent      = `يرجى الانتظار (${COUNTDOWN_START})`;
+            secEl.textContent       = COUNTDOWN_START;
             ring.style.strokeDasharray  = CIRCUMFERENCE;
             ring.style.strokeDashoffset = 0;
-            ring.style.stroke = "#66fcf1";
+            ring.style.stroke       = "#66fcf1";
 
             clearInterval(countdownTimer);
             let count = COUNTDOWN_START;
 
             countdownTimer = setInterval(() => {
                 count--;
-
                 secEl.textContent  = count;
                 btnTxt.textContent = count > 0 ? `يرجى الانتظار (${count})` : "يرجى الانتظار (0)";
 
                 const progress = count / COUNTDOWN_START;
                 ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-                if (count <= 0) {
-                    ring.style.stroke = "#10b981";
-                } else if (count <= 3) {
-                    ring.style.stroke = "#f59e0b";
-                }
+                if (count <= 0)      { ring.style.stroke = "#10b981"; }
+                else if (count <= 3) { ring.style.stroke = "#f59e0b"; }
 
                 if (count <= 0) {
                     clearInterval(countdownTimer);
@@ -699,26 +909,26 @@
             const btnIco = document.getElementById('btnIcon');
             const secEl  = document.getElementById('secondsLeft');
 
-            secEl.textContent   = "✓";
-            secEl.style.color = "#10b981";
+            secEl.textContent  = "✓";
+            secEl.style.color  = "#10b981";
 
-            btn.disabled  = false;
-            btn.className = "btn-ready w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btnIco.className = "fa-solid fa-download";
+            btn.disabled   = false;
+            btn.className  = "btn-ready w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btnIco.className   = "fa-solid fa-download";
             btnTxt.textContent = "انتقل إلى رابط التحميل — Download Now";
 
+            // Inline handler: fires pop-under gate (a), then opens the link
             btn.onclick = () => {
-                triggerOptionalPopUnder();
-                window.open(activeUrlToRedirect, '_blank');
+                triggerOptionalPopUnder(); // trigger point (a): final download button inside modal
+                window.open(activeUrlToRedirect, '_blank', 'noopener,noreferrer');
                 closeAdModal();
             };
         }
 
-        // ---- Modal open / close ----
+        // ─── MODAL OPEN / CLOSE ───────────────────────────────────────────────────
         function openModal() {
             const modal = document.getElementById('adModal');
             const card  = document.getElementById('modalContainer');
-
             modal.classList.remove('hidden');
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -730,13 +940,10 @@
 
         function closeAdModal() {
             clearInterval(countdownTimer);
-
             const modal = document.getElementById('adModal');
             const card  = document.getElementById('modalContainer');
-
             modal.style.opacity  = '0';
             card.style.transform = 'scale(0.92)';
-
             setTimeout(() => {
                 modal.classList.add('hidden');
                 resetModalState();
@@ -750,28 +957,24 @@
             const secEl  = document.getElementById('secondsLeft');
             const ring   = document.getElementById('ringFill');
 
-            btn.disabled      = true;
-            btn.className     = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btn.onclick       = null;
-            btnIco.className  = "fa-solid fa-hourglass-half";
-            // SECURITY: Use textContent instead of innerText
-            btnTxt.textContent  = `يرجى الانتظار (${COUNTDOWN_START})`;
-            secEl.textContent   = COUNTDOWN_START;
-            secEl.style.color = "#66fcf1";
+            btn.disabled                = true;
+            btn.className               = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
+            btn.onclick                 = null;
+            btnIco.className            = "fa-solid fa-hourglass-half";
+            btnTxt.textContent          = `يرجى الانتظار (${COUNTDOWN_START})`;
+            secEl.textContent           = COUNTDOWN_START;
+            secEl.style.color           = "#66fcf1";
             ring.style.strokeDashoffset = 0;
-            ring.style.stroke = "#66fcf1";
+            ring.style.stroke           = "#66fcf1";
         }
 
-        // ---- Render Archive Password Component ----
+        // ─── ARCHIVE PASSWORD ─────────────────────────────────────────────────────
         function renderArchivePassword(game) {
-            const passwordBox = document.getElementById('archivePasswordBox');
+            const passwordBox   = document.getElementById('archivePasswordBox');
             const passwordValue = document.getElementById('passwordValue');
-            
-            // Check if password field exists and is not empty/null/undefined
-            const hasPassword = game.password && typeof game.password === 'string' && game.password.trim() !== '';
-            
+            const hasPassword   = game.password && typeof game.password === 'string' && game.password.trim() !== '';
+
             if (hasPassword) {
-                // SECURITY: Use textContent instead of innerText
                 passwordValue.textContent = game.password.trim();
                 passwordBox.classList.remove('hidden');
             } else {
@@ -779,25 +982,22 @@
             }
         }
 
-        // ---- Copy Password to Clipboard ----
         function copyPassword() {
-            // SECURITY: Use textContent instead of innerText
             const passwordText = document.getElementById('passwordValue').textContent;
-            const copyBtn = document.getElementById('copyPasswordBtn');
+            const copyBtn  = document.getElementById('copyPasswordBtn');
             const copyIcon = document.getElementById('copyIcon');
             const copyText = document.getElementById('copyText');
-            
+
             navigator.clipboard.writeText(passwordText).then(() => {
-                triggerOptionalPopUnder();
-                // Change to success state
+                triggerOptionalPopUnder(); // trigger point (c): Copy Password button
+
                 copyIcon.className = 'fa-solid fa-check text-green-400';
                 copyText.textContent = 'تم النسخ!';
                 copyBtn.classList.add('border-green-500/50', 'bg-green-500/10', 'text-green-400');
                 copyBtn.classList.remove('border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
-                
-                // Revert after 2 seconds
+
                 setTimeout(() => {
-                    copyIcon.className = 'fa-solid fa-clipboard';
+                    copyIcon.className   = 'fa-solid fa-clipboard';
                     copyText.textContent = 'Copy';
                     copyBtn.classList.remove('border-green-500/50', 'bg-green-500/10', 'text-green-400');
                     copyBtn.classList.add('border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
@@ -807,14 +1007,9 @@
             });
         }
 
+        // ─── MODAL BACKDROP ───────────────────────────────────────────────────────
         document.getElementById('modalBackdrop').addEventListener('click', closeAdModal);
     </script>
 
-    <!-- ============================================================
-         AD-MONETIZATION PLACEHOLDERS
-         - Social Bar Ad Slot: Reserved for Monetag/Adsterra social bar scripts
-         - Pop-Under Trigger: Hook function defined in script section
-         - Direct Link Ads: Can be injected via triggerOptionalPopUnder()
-    ============================================================ -->
 </body>
 </html>
