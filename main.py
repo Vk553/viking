@@ -111,7 +111,7 @@ app = FastAPI(title="Vk Store API", lifespan=lifespan)
 # Read allowed origins from environment variable or use safe defaults
 # SECURITY: Secure CORS policy
 # تم إلغاء الـ getenv مؤقتاً لتجنب فخ ذاكرة الويندوز العالقة
-ALLOWED_ORIGINS = [*]
+ALLOWED_ORIGINS = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
