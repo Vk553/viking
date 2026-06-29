@@ -1,4 +1,5 @@
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import os
 import math
 import time
@@ -8,13 +9,12 @@ from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 
 # ==========================================
 # 1. الإعدادات العامة والثوابت
 # ==========================================
-DATABASE_NAME = "vk_store.db"
 # SECURITY: Read secret token from environment variable with safe fallback
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 security_scheme = HTTPBearer()
@@ -31,7 +31,7 @@ def cleanup_old_requests(ip: str):
     """Remove requests older than the rate limit window."""
     current_time = time.time()
     request_tracker[ip] = [
-        ts for ts in request_tracker[ip] 
+        ts for ts in request_tracker[ip]
         if current_time - ts < RATE_LIMIT_WINDOW
     ]
 
@@ -48,8 +48,15 @@ def check_rate_limit(ip: str) -> bool:
 # 2. إدارة الاتصال وقاعدة البيانات
 # ==========================================
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE_NAME)
-    conn.row_factory = sqlite3.Row
+    """
+    Connect to PostgreSQL using the DATABASE_URL environment variable.
+    Uses RealDictCursor so all rows behave like dicts (equivalent to sqlite3.Row).
+    """
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable is not set.")
+
+    conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
 
@@ -57,10 +64,10 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # إنشاء الجدول إذا لم يكن موجوداً مع حقل is_arabic والحقول الإضافية
+    # Create the table if it doesn't exist (PostgreSQL syntax)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS games (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             title TEXT,
             console TEXT,
             cover_image TEXT,
@@ -80,20 +87,28 @@ def init_db():
         )
     """)
 
-    # إضافة حقل is_arabic إذا كان الجدول موجوداً مسبقاً ولا يحتوي على الحقل
-    try:
-        cursor.execute("ALTER TABLE games ADD COLUMN is_arabic INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        # الحقل موجود مسبقاً، لا داعي لفعل أي شيء
-        pass
+    # Safely add columns that might already exist.
+    # In PostgreSQL we check pg_attribute to avoid raising errors on duplicate columns.
+    columns_to_add = {
+        "is_arabic":     "INTEGER DEFAULT 0",
+        "extra_1_label": "TEXT",
+        "extra_1_url":   "TEXT",
+        "extra_2_label": "TEXT",
+        "extra_2_url":   "TEXT",
+        "password":      "TEXT",
+    }
 
-    # إضافة الحقول الإضافية للتحميلات الديناميكية
-    for column in ["extra_1_label", "extra_1_url", "extra_2_label", "extra_2_url", "password"]:
-        try:
-            cursor.execute(f"ALTER TABLE games ADD COLUMN {column} TEXT")
-        except sqlite3.OperationalError:
-            # الحقل موجود مسبقاً، لا داعي لفعل أي شيء
-            pass
+    for col_name, col_def in columns_to_add.items():
+        cursor.execute("""
+            SELECT 1
+            FROM pg_attribute
+            WHERE attrelid = 'games'::regclass
+              AND attname   = %s
+              AND NOT attisdropped
+        """, (col_name,))
+
+        if cursor.fetchone() is None:
+            cursor.execute(f"ALTER TABLE games ADD COLUMN {col_name} {col_def}")
 
     conn.commit()
     conn.close()
@@ -108,9 +123,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Vk Store API", lifespan=lifespan)
 
 # SECURITY: Secure CORS policy - restrict origins to prevent unauthorized cross-origin requests
-# Read allowed origins from environment variable or use safe defaults
-# SECURITY: Secure CORS policy
-# تم إلغاء الـ getenv مؤقتاً لتجنب فخ ذاكرة الويندوز العالقة
 ALLOWED_ORIGINS = ["*"]
 
 app.add_middleware(
@@ -214,7 +226,6 @@ def get_games(
         x_forwarded_for: Optional[str] = Query(None, alias="X-Forwarded-For")
 ):
     # SECURITY: Rate limiting check to prevent DDoS attacks
-    # In production, use X-Real-IP or X-Forwarded-For from headers instead of query param
     client_ip = x_forwarded_for if x_forwarded_for else "unknown"
     if not check_rate_limit(client_ip):
         raise HTTPException(
@@ -237,30 +248,33 @@ def get_games(
 
     # فلترة المنصة — يتم تجاهل الفلتر إذا كانت القيمة 'all'
     if console and console.lower() != 'all':
-        base_query += " AND LOWER(console) = LOWER(?)"
+        base_query += " AND LOWER(console) = LOWER(%s)"
         params.append(console)
 
     # فلترة التعريب — يتم تطبيقها فقط إذا تم تمرير القيمة صراحةً
     if is_arabic is not None:
-        base_query += " AND is_arabic = ?"
+        base_query += " AND is_arabic = %s"
         params.append(is_arabic)
 
     # فلترة البحث بالاسم
     if search:
-        base_query += " AND title LIKE ?"
+        base_query += " AND title ILIKE %s"
         params.append(f"%{search}%")
 
     # حساب إجمالي عدد الألعاب والصفحات
     count_query = f"SELECT COUNT(*) as total {base_query}"
-    total_items = cursor.execute(count_query, params).fetchone()["total"]
+    cursor.execute(count_query, params)
+    total_items = cursor.fetchone()["total"]
     total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
     # جلب البيانات مع الـ Pagination
     offset = (page - 1) * limit
-    data_query = f"SELECT * {base_query} ORDER BY id DESC LIMIT ? OFFSET ?"
+    data_query = f"SELECT * {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
     data_params = params + [limit, offset]
 
-    rows = cursor.execute(data_query, data_params).fetchall()
+    cursor.execute(data_query, data_params)
+    rows = cursor.fetchall()
+    # RealDictCursor rows are already dict-like; convert to plain dict for JSON serialization
     games = [dict(row) for row in rows]
 
     conn.close()
@@ -280,7 +294,8 @@ def get_games(
 def get_game_by_id(id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
-    row = cursor.execute("SELECT * FROM games WHERE id = ?", (id,)).fetchone()
+    cursor.execute("SELECT * FROM games WHERE id = %s", (id,))
+    row = cursor.fetchone()
     conn.close()
 
     if not row:
@@ -294,24 +309,28 @@ def create_game(game: GameCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # PostgreSQL: use RETURNING id instead of cursor.lastrowid
     query = """
         INSERT INTO games (
             title, console, cover_image, description, size,
             version, youtube_link, game_link, update_link, dlc_link, is_arabic,
             extra_1_label, extra_1_url, extra_2_label, extra_2_url, password
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
         game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
-        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label, game.extra_2_url, game.password
+        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label,
+        game.extra_2_url, game.password
     )
 
     cursor.execute(query, values)
-    new_game_id = cursor.lastrowid
+    new_game_id = cursor.fetchone()["id"]
     conn.commit()
 
-    created_game = cursor.execute("SELECT * FROM games WHERE id = ?", (new_game_id,)).fetchone()
+    cursor.execute("SELECT * FROM games WHERE id = %s", (new_game_id,))
+    created_game = cursor.fetchone()
     conn.close()
 
     return {
@@ -325,28 +344,32 @@ def update_game(id: int, game: GameUpdate):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    check_row = cursor.execute("SELECT id FROM games WHERE id = ?", (id,)).fetchone()
+    cursor.execute("SELECT id FROM games WHERE id = %s", (id,))
+    check_row = cursor.fetchone()
     if not check_row:
         conn.close()
         raise HTTPException(status_code=404, detail="اللعبة المراد تعديلها غير موجودة")
 
     query = """
         UPDATE games SET
-            title = ?, console = ?, cover_image = ?, description = ?, size = ?,
-            version = ?, youtube_link = ?, game_link = ?, update_link = ?, dlc_link = ?,
-            is_arabic = ?, extra_1_label = ?, extra_1_url = ?, extra_2_label = ?, extra_2_url = ?, password = ?
-        WHERE id = ?
+            title = %s, console = %s, cover_image = %s, description = %s, size = %s,
+            version = %s, youtube_link = %s, game_link = %s, update_link = %s, dlc_link = %s,
+            is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_2_label = %s,
+            extra_2_url = %s, password = %s
+        WHERE id = %s
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
         game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
-        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label, game.extra_2_url, game.password, id
+        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label,
+        game.extra_2_url, game.password, id
     )
 
     cursor.execute(query, values)
     conn.commit()
 
-    updated_game = cursor.execute("SELECT * FROM games WHERE id = ?", (id,)).fetchone()
+    cursor.execute("SELECT * FROM games WHERE id = %s", (id,))
+    updated_game = cursor.fetchone()
     conn.close()
 
     return {
@@ -360,12 +383,13 @@ def delete_game(id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    check_row = cursor.execute("SELECT id FROM games WHERE id = ?", (id,)).fetchone()
+    cursor.execute("SELECT id FROM games WHERE id = %s", (id,))
+    check_row = cursor.fetchone()
     if not check_row:
         conn.close()
         raise HTTPException(status_code=404, detail="اللعبة المراد حذفها غير موجودة")
 
-    cursor.execute("DELETE FROM games WHERE id = ?", (id,))
+    cursor.execute("DELETE FROM games WHERE id = %s", (id,))
     conn.commit()
     conn.close()
 
@@ -378,22 +402,28 @@ def delete_game(id: int):
 
 @app.get("/api/admin/backup-db", dependencies=[Depends(verify_token)])
 def backup_database():
-    # SECURITY: Prevent path traversal by using absolute path resolution
-    db_path = os.path.abspath(DATABASE_NAME)
-    
-    # Verify the resolved path is within the expected directory
-    if not os.path.exists(db_path):
-        raise HTTPException(status_code=404, detail="ملف قاعدة البيانات غير موجود بعد")
-    
-    # Additional security: ensure we're serving the actual database file
-    if not db_path.endswith(DATABASE_NAME):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Unauthorized file access attempt detected"
-        )
+    """
+    Replaced the SQLite FileResponse backup with a JSON dump of all rows
+    from the games table, since the database is now cloud-hosted on Neon.tech
+    and there is no local .db file to download.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    return FileResponse(
-        path=db_path,
-        filename="vk_store_backup.db",
-        media_type="application/x-sqlite3"
-    )
+    cursor.execute("SELECT * FROM games ORDER BY id ASC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    backup_data = {
+        "backup_source": "PostgreSQL / Neon.tech",
+        "table": "games",
+        "total_records": len(rows),
+        "data": [dict(row) for row in rows],
+    }
+
+    return JSONResponse(
+        content=backup_data,
+        headers={
+            "Content-Disposition": "attachment; filename=vk_store_backup.json"
+        }
+)
