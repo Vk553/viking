@@ -215,6 +215,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security_sc
 # 5. الـ Endpoints الخاصة بالألعاب
 # ==========================================
 
+# ==========================================
+# مسار نبض الحياة (لمنع السيرفر من النوم)
+# ==========================================
+@app.get("/health", status_code=status.HTTP_200_OK)
+def health_check():
+    return {"status": "OK", "message": "Vk-Store Server is awake!"}
+    
+
 @app.get("/api/games", status_code=status.HTTP_200_OK)
 def get_games(
         console: Optional[str] = Query(None, description="فلترة حسب المنصة (مثال: ps4) أو 'all' لجلب الكل"),
