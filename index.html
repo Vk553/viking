@@ -43,25 +43,140 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ─── MOBILE-ONLY ENHANCEMENTS ─── */
+
+        /* Filter bar: horizontal scroll with snap + hide scrollbar */
+        @media (max-width: 767px) {
+            #filterContainer {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+                gap: 6px;
+                padding: 6px 8px;
+                border-radius: 14px;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                /* subtle neon bottom border on mobile */
+                border-bottom: 1px solid rgba(102, 252, 241, 0.12);
+            }
+            #filterContainer::-webkit-scrollbar { display: none; }
+            #filterContainer .filter-btn {
+                scroll-snap-align: start;
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+
+            /* Modal: full-width bottom-sheet on mobile */
+            #gameModal {
+                align-items: flex-end;
+                padding: 0;
+            }
+            #modalBox {
+                border-radius: 24px 24px 0 0;
+                max-width: 100%;
+                width: 100%;
+                max-height: 92dvh;
+                overflow-y: auto;
+                /* subtle neon top glow */
+                box-shadow: 0 -4px 40px rgba(102, 252, 241, 0.08), 0 0 0 1px rgba(102,252,241,0.1);
+            }
+            #modalContent {
+                padding: 20px 16px 32px;
+            }
+
+            /* Game card grid: tighter on mobile */
+            #gamesGrid {
+                gap: 12px;
+            }
+
+            /* Body bottom padding for mobile safe area */
+            body {
+                padding-bottom: max(48px, env(safe-area-inset-bottom));
+            }
+
+            /* Sub-tab bar: full width on mobile */
+            .sub-tab-row {
+                width: 100%;
+            }
+            .sub-tab-row > div {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Mobile modal drag-handle indicator */
+        @media (max-width: 767px) {
+            #modalBox::before {
+                content: '';
+                display: block;
+                width: 40px;
+                height: 4px;
+                background: rgba(255,255,255,0.15);
+                border-radius: 2px;
+                margin: 10px auto 4px;
+            }
+        }
+
+        /* Neon card hover glow – enhanced on all screens */
+        .game-card-neon:hover {
+            box-shadow: 0 0 0 1px rgba(102, 252, 241, 0.35), 0 12px 40px rgba(0,0,0,0.85);
+        }
+
+        /* Gradient backdrop behind main content */
+        @media (max-width: 767px) {
+            main::before {
+                content: '';
+                position: fixed;
+                top: 0; left: 0; right: 0;
+                height: 220px;
+                background: radial-gradient(ellipse at 50% -10%, rgba(102,252,241,0.07) 0%, transparent 70%);
+                pointer-events: none;
+                z-index: 0;
+            }
+        }
+
+        /* Mobile close button sticky bar inside modal */
+        @media (max-width: 767px) {
+            .modal-sticky-close {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: linear-gradient(to bottom, #14161d 70%, transparent);
+                padding: 12px 16px 8px;
+                margin: -20px -16px 4px;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-12">
 
+    <!-- ═══════════════════════════════════════════
+         HEADER
+         Mobile: relative (scrolls away), compact logo
+         Desktop: sticky, full logo
+    ═══════════════════════════════════════════ -->
     <header class="relative md:sticky md:top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 md:py-4">
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 md:py-4">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-2 md:gap-4">
 
+                <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
-                    <img src="image/icon.jpg" alt="VK Store Logo" id="site-brand-logo" class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
+                    <img src="image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
+                         class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
                 </div>
 
+                <!-- Search input -->
                 <div class="relative w-full md:w-72">
                     <input type="text" id="searchInput" placeholder="ابحث عن اسم لعبة..."
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400 transition-all pr-10 text-white placeholder-gray-500">
                     <i class="fa-solid fa-magnifying-glass absolute right-3 top-3.5 text-gray-500 text-xs"></i>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-center gap-1.5 bg-white/5 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar" id="filterContainer">
+                <!-- Filter buttons: horizontal scroll on mobile, wrap on desktop -->
+                <div class="flex items-center bg-white/5 p-1.5 rounded-2xl border border-white/5 w-full md:w-auto" id="filterContainer">
                     <button onclick="filterGames(event, '')" class="filter-btn active px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 bg-cyan-400 text-black shadow-[0_0_12px_rgba(102,252,241,0.4)]">الكل</button>
                     <button onclick="filterGames(event, 'PS5')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS5</button>
                     <button onclick="filterGames(event, 'PS4')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS4</button>
@@ -75,34 +190,44 @@
 
             </div>
 
-            <div class="flex items-center justify-center gap-2 mt-4 bg-white/[0.02] p-1 rounded-xl border border-white/5 w-fit mx-auto">
+            <!-- Arabic sub-filter tab -->
+            <div class="sub-tab-row flex items-center justify-center gap-2 mt-3 md:mt-4 bg-white/[0.02] p-1 rounded-xl border border-white/5 w-fit mx-auto">
                 <button onclick="filterArabic(event, '')" class="sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm">كل الألعاب</button>
                 <button onclick="filterArabic(event, '1')" class="sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">الألعاب المعربة 🇸🇦</button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <!-- ═══════════════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════════════ -->
+    <main class="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 md:mt-8">
 
         <div id="loader" class="flex flex-col items-center justify-center py-32">
             <div class="w-12 h-12 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></div>
             <p class="mt-4 text-sm text-gray-400 animate-pulse">جاري الاتصال بالسيرفر...</p>
         </div>
 
-        <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden"></div>
+        <!-- Grid: 2 columns on mobile for more content density, scales up on larger screens -->
+        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 hidden"></div>
 
         <div id="emptyState" class="hidden text-center py-24 bg-white/[0.02] rounded-3xl border border-dashed border-white/10 mt-6"></div>
 
     </main>
 
-    <div id="gameModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
-        <div class="bg-[#14161d] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalBox">
-            <div id="modalContent" class="p-6"></div>
+    <!-- ═══════════════════════════════════════════
+         GAME DETAIL MODAL
+         Mobile: bottom-sheet with drag handle + sticky close
+         Desktop: centered pop-up (unchanged)
+    ═══════════════════════════════════════════ -->
+    <div id="gameModal" class="fixed inset-0 z-50 flex items-center md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-[#14161d] border border-white/10 w-full max-w-2xl md:rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalBox">
+            <div id="modalContent" class="p-6 md:p-6"></div>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = "https://vk-store.onrender.com/api/games";
+        const API_BASE_URL = "http://127.0.0.1:8000/api/games";
         let activeConsole = "";
         let activeArabic = "";
         let searchTimeout = null;
@@ -210,9 +335,9 @@
                 const bannerPath = getConsoleBanner(game.console);
 
                 const card = `
-                <div class="group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
 
-                    <div class="w-full h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
+                    <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
                         <img src="${escapeHtml(bannerPath)}" alt="${escapeHtml(game.console)} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
                     </div>
 
@@ -221,32 +346,32 @@
                              onerror="this.src='${escapeHtml(fallbackImg)}'"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
-                        <div class="absolute bottom-2 left-2 z-10 w-14 h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-lg pointer-events-none">
+                        <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
                             <img src="image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         ${game.is_arabic == 1 ? `
-                        <div class="absolute top-3 right-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-md border border-amber-400/40 px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                        <div class="absolute top-2 right-2 md:top-3 md:right-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-md border border-amber-400/40 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-black tracking-wider text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
                             مُعرّبة 🇸🇦
                         </div>
                         ` : ''}
                     </div>
 
-                    <div class="p-4 flex flex-col flex-grow justify-between gap-4 bg-gradient-to-b from-transparent to-[#10121a]">
+                    <div class="p-2.5 md:p-4 flex flex-col flex-grow justify-between gap-2 md:gap-4 bg-gradient-to-b from-transparent to-[#10121a]">
                         <div>
-                            <h3 class="font-bold text-base text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-1" title="${escapeHtml(game.title)}">
+                            <h3 class="font-bold text-xs md:text-base text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-1" title="${escapeHtml(game.title)}">
                                 ${escapeHtml(game.title)}
                             </h3>
-                            <p class="text-xs text-gray-400 mt-1 flex items-center gap-2">
-                                <i class="fa-solid fa-hard-drive text-[10px] text-gray-500"></i>
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">${escapeHtml(game.size || 'غير محدد')}</span>
                             </p>
                         </div>
 
                         <button onclick="openGameModal(${Number(game.id) || 0})"
-                            class="w-full py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-2 group/btn">
-                            <span>عرض التفاصيل</span>
-                            <i class="fa-solid fa-arrow-left text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
+                            class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
+                            <span>التفاصيل</span>
+                            <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
                         </button>
                     </div>
 
@@ -293,6 +418,7 @@
             modal.classList.remove('hidden');
             setTimeout(() => { modal.classList.remove('opacity-0'); modalBox.classList.remove('scale-95'); }, 10);
 
+            // Mobile: show compact loader, desktop: centered loader
             content.innerHTML = `<div class="py-16 text-center"><div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto"></div></div>`;
 
             try {
@@ -304,25 +430,30 @@
                 const safeYoutube = isSafeUrl(g.youtube_link) ? g.youtube_link : null;
 
                 content.innerHTML = `
-                    <div class="flex flex-col md:flex-row gap-6">
-                        <img src="${escapeHtml(safeCover)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400'" class="w-full md:w-48 h-64 object-cover rounded-2xl border border-white/10 shadow-lg">
+                    <div class="modal-sticky-close flex justify-between items-center md:hidden">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">${escapeHtml(g.console === 'XBOX' ? 'XBOX 360' : g.console)}</span>
+                        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all text-sm"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
 
-                        <div class="flex-1 flex flex-col justify-between">
+                    <div class="flex flex-col md:flex-row gap-4 md:gap-6">
+                        <img src="${escapeHtml(safeCover)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400'" class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg">
+
+                        <div class="flex-1 flex flex-col justify-between gap-3">
                             <div>
-                                <div class="flex justify-between items-start">
+                                <div class="hidden md:flex justify-between items-start">
                                     <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">${escapeHtml(g.console === 'XBOX' ? 'XBOX 360' : g.console)}</span>
                                     <button onclick="closeModal()" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
                                 </div>
-                                <h2 class="text-xl font-black mt-2 text-white">${escapeHtml(g.title)}</h2>
-                                <p class="text-xs text-gray-400 mt-2 leading-relaxed max-h-24 overflow-y-auto pr-1">${escapeHtml(g.description || 'لا يوجد وصف متاح لهذه اللعبة.')}</p>
+                                <h2 class="text-lg md:text-xl font-black mt-1 md:mt-2 text-white">${escapeHtml(g.title)}</h2>
+                                <p class="text-xs text-gray-400 mt-2 leading-relaxed max-h-20 md:max-h-24 overflow-y-auto pr-1">${escapeHtml(g.description || 'لا يوجد وصف متاح لهذه اللعبة.')}</p>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 my-4 bg-white/[0.03] p-3 rounded-xl border border-white/5 text-xs">
+                            <div class="grid grid-cols-2 gap-2 bg-white/[0.03] p-3 rounded-xl border border-white/5 text-xs">
                                 <div><span class="text-gray-500 block">الحجم:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.size || '--')}</span></div>
                                 <div><span class="text-gray-500 block">الإصدار:</span> <span class="font-bold text-gray-200">${escapeHtml(g.version || '--')}</span></div>
                             </div>
 
-                            <div class="flex flex-col gap-2 pt-4 border-t border-white/5 mt-2">
+                            <div class="flex flex-col gap-2 pt-3 md:pt-4 border-t border-white/5">
                                 <a href="download.html?id=${Number(g.id) || 0}" class="w-full bg-cyan-400 hover:bg-cyan-300 text-black text-center py-3 rounded-xl text-sm font-black shadow-[0_0_15px_rgba(102,252,241,0.3)] transition">الانتقال لصفحة التحميل</a>
 
                                 <div class="flex gap-2">
