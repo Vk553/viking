@@ -47,12 +47,12 @@
 </head>
 <body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-12">
 
-    <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <header class="relative md:sticky md:top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 md:py-4">
             <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
 
                 <div class="flex items-center">
-                    <img src="image/icon.jpg" alt="VK Store Logo" id="site-brand-logo" class="pointer-events-none select-none">
+                    <img src="image/icon.jpg" alt="VK Store Logo" id="site-brand-logo" class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
                 </div>
 
                 <div class="relative w-full md:w-72">
@@ -102,7 +102,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = "https://vk-store.onrender.com/api/games";
+        const API_BASE_URL = "";
         let activeConsole = "";
         let activeArabic = "";
         let searchTimeout = null;
