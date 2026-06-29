@@ -111,16 +111,7 @@ app = FastAPI(title="Vk Store API", lifespan=lifespan)
 # Read allowed origins from environment variable or use safe defaults
 # SECURITY: Secure CORS policy
 # تم إلغاء الـ getenv مؤقتاً لتجنب فخ ذاكرة الويندوز العالقة
-ALLOWED_ORIGINS = [
-    "http://localhost:63342",
-    "http://127.0.0.1:63342",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://localhost",
-    "http://127.0.0.1",
-    "https://vkstore.com",
-    "null"  # هذه الكلمة هي كلمة السر لعمل ملفات الـ HTML المحلية
-]
+ALLOWED_ORIGINS = [*]
 
 app.add_middleware(
     CORSMiddleware,
