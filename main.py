@@ -15,20 +15,16 @@ from pydantic import BaseModel, field_validator
 # ==========================================
 # 1. الإعدادات العامة والثوابت
 # ==========================================
-# SECURITY: Read secret token from environment variable with safe fallback
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 security_scheme = HTTPBearer()
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
-# SECURITY: Rate limiting configuration (in-memory tracking for DDoS protection)
-# In production, consider using Redis or a dedicated rate-limiting service
-RATE_LIMIT_REQUESTS = 100  # Max requests per window
-RATE_LIMIT_WINDOW = 60     # Time window in seconds
-request_tracker = defaultdict(list)  # {ip: [timestamp1, timestamp2, ...]}
+RATE_LIMIT_REQUESTS = 100
+RATE_LIMIT_WINDOW = 60
+request_tracker = defaultdict(list)
 
 def cleanup_old_requests(ip: str):
-    """Remove requests older than the rate limit window."""
     current_time = time.time()
     request_tracker[ip] = [
         ts for ts in request_tracker[ip]
@@ -36,7 +32,6 @@ def cleanup_old_requests(ip: str):
     ]
 
 def check_rate_limit(ip: str) -> bool:
-    """Check if IP has exceeded rate limit."""
     cleanup_old_requests(ip)
     if len(request_tracker[ip]) >= RATE_LIMIT_REQUESTS:
         return False
@@ -48,14 +43,9 @@ def check_rate_limit(ip: str) -> bool:
 # 2. إدارة الاتصال وقاعدة البيانات
 # ==========================================
 def get_db_connection():
-    """
-    Connect to PostgreSQL using the DATABASE_URL environment variable.
-    Uses RealDictCursor so all rows behave like dicts (equivalent to sqlite3.Row).
-    """
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL environment variable is not set.")
-
     conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
@@ -64,7 +54,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Create the table if it doesn't exist (PostgreSQL syntax)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS games (
             id SERIAL PRIMARY KEY,
@@ -87,8 +76,6 @@ def init_db():
         )
     """)
 
-    # Safely add columns that might already exist.
-    # In PostgreSQL we check pg_attribute to avoid raising errors on duplicate columns.
     columns_to_add = {
         "is_arabic":     "INTEGER DEFAULT 0",
         "extra_1_label": "TEXT",
@@ -122,7 +109,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Vk Store API", lifespan=lifespan)
 
-# SECURITY: Secure CORS policy - restrict origins to prevent unauthorized cross-origin requests
 ALLOWED_ORIGINS = ["*"]
 
 app.add_middleware(
@@ -171,13 +157,11 @@ class GameBase(BaseModel):
             raise ValueError("قيمة is_arabic يجب أن تكون 0 أو 1 فقط")
         return v
 
-    # SECURITY: URL validation to prevent XSS and malicious protocol injection
     @field_validator('cover_image', 'youtube_link', 'game_link', 'update_link', 'dlc_link', 'extra_1_url', 'extra_2_url')
     @classmethod
     def validate_url_fields(cls, v):
         if v and v.strip():
             v = v.strip()
-            # Ensure URL starts with http:// or https:// to prevent javascript: and other dangerous protocols
             if not (v.startswith('http://') or v.startswith('https://')):
                 raise ValueError(
                     f"رابط غير آمن: '{v}'. يجب أن يبدأ بـ http:// أو https://"
@@ -215,25 +199,20 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security_sc
 # 5. الـ Endpoints الخاصة بالألعاب
 # ==========================================
 
-# ==========================================
-# مسار نبض الحياة (لمنع السيرفر من النوم)
-# ==========================================
 @app.get("/health", status_code=status.HTTP_200_OK)
 def health_check():
     return {"status": "OK", "message": "Vk-Store Server is awake!"}
-    
+
 
 @app.get("/api/games", status_code=status.HTTP_200_OK)
 def get_games(
-        console: Optional[str] = Query(None, description="فلترة حسب المنصة (مثال: ps4) أو 'all' لجلب الكل"),
-        is_arabic: Optional[int] = Query(None, description="فلترة حسب التعريب: 1 للمعربة، 0 لغير المعربة"),
-        search: Optional[str] = Query(None, description="البحث في اسم اللعبة"),
-        page: int = Query(1, ge=1, description="رقم الصفحة"),
-        limit: int = Query(12, ge=1, le=100, description="عدد العناصر في الصفحة"),
-        # SECURITY: Rate limiting via client IP (X-Forwarded-For or fallback)
+        console: Optional[str] = Query(None),
+        is_arabic: Optional[int] = Query(None),
+        search: Optional[str] = Query(None),
+        page: int = Query(1, ge=1),
+        limit: int = Query(12, ge=1, le=100),
         x_forwarded_for: Optional[str] = Query(None, alias="X-Forwarded-For")
 ):
-    # SECURITY: Rate limiting check to prevent DDoS attacks
     client_ip = x_forwarded_for if x_forwarded_for else "unknown"
     if not check_rate_limit(client_ip):
         raise HTTPException(
@@ -241,7 +220,6 @@ def get_games(
             detail="Too many requests. Please try again later."
         )
 
-    # التحقق من قيمة is_arabic إذا تم تمريرها
     if is_arabic is not None and is_arabic not in (0, 1):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -254,35 +232,30 @@ def get_games(
     base_query = "FROM games WHERE 1=1"
     params: List = []
 
-    # فلترة المنصة — يتم تجاهل الفلتر إذا كانت القيمة 'all'
     if console and console.lower() != 'all':
         base_query += " AND LOWER(console) = LOWER(%s)"
         params.append(console)
 
-    # فلترة التعريب — يتم تطبيقها فقط إذا تم تمرير القيمة صراحةً
     if is_arabic is not None:
         base_query += " AND is_arabic = %s"
         params.append(is_arabic)
 
-    # فلترة البحث بالاسم
     if search:
         base_query += " AND title ILIKE %s"
         params.append(f"%{search}%")
 
-    # حساب إجمالي عدد الألعاب والصفحات
     count_query = f"SELECT COUNT(*) as total {base_query}"
     cursor.execute(count_query, params)
     total_items = cursor.fetchone()["total"]
     total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
-    # جلب البيانات مع الـ Pagination
     offset = (page - 1) * limit
     data_query = f"SELECT * {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
     data_params = params + [limit, offset]
 
     cursor.execute(data_query, data_params)
     rows = cursor.fetchall()
-    # RealDictCursor rows are already dict-like; convert to plain dict for JSON serialization
+    # RealDictCursor rows from fetchall() are already list-of-dicts; dict() here is safe and needed
     games = [dict(row) for row in rows]
 
     conn.close()
@@ -309,7 +282,7 @@ def get_game_by_id(id: int):
     if not row:
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
 
-    return dict(row)
+    return row  # ✅ FIX 1: was dict(row) — RealDictCursor already returns a dict-like object
 
 
 @app.post("/api/games", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_token)])
@@ -317,7 +290,6 @@ def create_game(game: GameCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # PostgreSQL: use RETURNING id instead of cursor.lastrowid
     query = """
         INSERT INTO games (
             title, console, cover_image, description, size,
@@ -343,7 +315,7 @@ def create_game(game: GameCreate):
 
     return {
         "message": "تم إضافة اللعبة بنجاح",
-        "data": dict(created_game)
+        "data": created_game  # ✅ FIX 2: was dict(created_game)
     }
 
 
@@ -382,7 +354,7 @@ def update_game(id: int, game: GameUpdate):
 
     return {
         "message": "تم تعديل بيانات اللعبة بنجاح",
-        "data": dict(updated_game)
+        "data": updated_game  # ✅ FIX 3: was dict(updated_game)
     }
 
 
@@ -410,11 +382,6 @@ def delete_game(id: int):
 
 @app.get("/api/admin/backup-db", dependencies=[Depends(verify_token)])
 def backup_database():
-    """
-    Replaced the SQLite FileResponse backup with a JSON dump of all rows
-    from the games table, since the database is now cloud-hosted on Neon.tech
-    and there is no local .db file to download.
-    """
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -426,7 +393,7 @@ def backup_database():
         "backup_source": "PostgreSQL / Neon.tech",
         "table": "games",
         "total_records": len(rows),
-        "data": [dict(row) for row in rows],
+        "data": [dict(row) for row in rows],  # ✅ fetchall() loop — dict() is correct here
     }
 
     return JSONResponse(
@@ -434,4 +401,4 @@ def backup_database():
         headers={
             "Content-Disposition": "attachment; filename=vk_store_backup.json"
         }
-)
+    )
