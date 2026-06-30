@@ -193,7 +193,19 @@
             <!-- Arabic sub-filter tab -->
             <div class="sub-tab-row flex items-center justify-center gap-2 mt-3 md:mt-4 bg-white/[0.02] p-1 rounded-xl border border-white/5 w-fit mx-auto">
                 <button onclick="filterArabic(event, '')" class="sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm">كل الألعاب</button>
-                <button onclick="filterArabic(event, '1')" class="sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">الألعاب المعربة 🇸🇦</button>
+                <button onclick="filterArabic(event, '1')" class="sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                    <span>الألعاب المعربة</span>
+                    <span class="md:hidden">🇸🇦</span>
+                    <span class="hidden md:inline-flex items-center">
+                        <img src="https://flagcdn.com/w20/sa.png"
+                             srcset="https://flagcdn.com/w40/sa.png 2x"
+                             alt="السعودية"
+                             width="14" height="10"
+                             class="inline-block rounded-[2px] shadow-sm align-middle"
+                             loading="lazy"
+                             onerror="this.style.display='none'">
+                    </span>
+                </button>
             </div>
         </div>
     </header>
@@ -351,8 +363,18 @@
                         </div>
 
                         ${game.is_arabic == 1 ? `
-                        <div class="absolute top-2 right-2 md:top-3 md:right-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-md border border-amber-400/40 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-black tracking-wider text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                            مُعرّبة 🇸🇦
+                        <div class="absolute top-2 right-2 md:top-3 md:right-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-md border border-amber-400/40 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-black tracking-wider text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-1.5">
+                            <span>مُعرّبة</span>
+                            <span class="md:hidden">🇸🇦</span>
+                            <span class="hidden md:inline-flex items-center">
+                                <img src="https://flagcdn.com/w20/sa.png"
+                                     srcset="https://flagcdn.com/w40/sa.png 2x"
+                                     alt="السعودية"
+                                     width="14" height="10"
+                                     class="inline-block rounded-[2px] shadow-sm align-middle"
+                                     loading="lazy"
+                                     onerror="this.style.display='none'">
+                            </span>
                         </div>
                         ` : ''}
                     </div>
