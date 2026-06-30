@@ -5,6 +5,7 @@ import math
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -179,7 +180,7 @@ class GameUpdate(GameBase):
 
 class GameResponse(GameBase):
     id: int
-    created_at: str
+    created_at: datetime  # ✅ FIX: was `str` — PostgreSQL TIMESTAMP columns are returned as datetime objects
 
 
 # ==========================================
@@ -255,7 +256,6 @@ def get_games(
 
     cursor.execute(data_query, data_params)
     rows = cursor.fetchall()
-    # RealDictCursor rows from fetchall() are already list-of-dicts; dict() here is safe and needed
     games = [dict(row) for row in rows]
 
     conn.close()
@@ -282,7 +282,7 @@ def get_game_by_id(id: int):
     if not row:
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
 
-    return row  # ✅ FIX 1: was dict(row) — RealDictCursor already returns a dict-like object
+    return row
 
 
 @app.post("/api/games", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_token)])
@@ -315,7 +315,7 @@ def create_game(game: GameCreate):
 
     return {
         "message": "تم إضافة اللعبة بنجاح",
-        "data": created_game  # ✅ FIX 2: was dict(created_game)
+        "data": created_game
     }
 
 
@@ -354,7 +354,7 @@ def update_game(id: int, game: GameUpdate):
 
     return {
         "message": "تم تعديل بيانات اللعبة بنجاح",
-        "data": updated_game  # ✅ FIX 3: was dict(updated_game)
+        "data": updated_game
     }
 
 
@@ -393,7 +393,7 @@ def backup_database():
         "backup_source": "PostgreSQL / Neon.tech",
         "table": "games",
         "total_records": len(rows),
-        "data": [dict(row) for row in rows],  # ✅ fetchall() loop — dict() is correct here
+        "data": [dict(row) for row in rows],
     }
 
     return JSONResponse(
