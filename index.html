@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vk Store | متجر الألعاب</title>
+    <title>{{ seo_meta.title }}</title>
+    <meta name="description" content="{{ seo_meta.description }}">
+    <link rel="canonical" href="{{ seo_meta.canonical_url }}">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -164,7 +166,7 @@
 
                 <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
-                    <img src="image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
+                    <img src="/image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
                          class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
                 </div>
 
@@ -221,7 +223,62 @@
         </div>
 
         <!-- Grid: 2 columns on mobile for more content density, scales up on larger screens -->
-        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 hidden"></div>
+        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 hidden">
+            {% if games %}
+                <!-- Server-rendered game cards for SEO/crawlers -->
+                {% for game in games %}
+                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
+                    <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
+                        <img src="/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
+                    </div>
+
+                    <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
+                        <img src="{{ game.cover_image or 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' }}" alt="{{ game.title }}"
+                             onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80'"
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
+
+                        <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
+                            <img src="/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                        </div>
+
+                        {% if game.is_arabic == 1 %}
+                        <div class="absolute top-2 right-2 md:top-3 md:right-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-md border border-amber-400/40 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-lg text-[9px] md:text-[10px] font-black tracking-wider text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-1.5">
+                            <span>مُعرّبة</span>
+                            <span class="md:hidden">🇸🇦</span>
+                            <span class="hidden md:inline-flex items-center">
+                                <img src="https://flagcdn.com/w20/sa.png"
+                                     srcset="https://flagcdn.com/w40/sa.png 2x"
+                                     alt="السعودية"
+                                     width="14" height="10"
+                                     class="inline-block rounded-[2px] shadow-sm align-middle"
+                                     loading="lazy"
+                                     onerror="this.style.display='none'">
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="p-2.5 md:p-4 flex flex-col flex-grow justify-between gap-2 md:gap-4 bg-gradient-to-b from-transparent to-[#10121a]">
+                        <div>
+                            <h3 class="font-bold text-xs md:text-base text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-1" title="{{ game.title }}">
+                                {{ game.title }}
+                            </h3>
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
+                                <span dir="ltr" class="inline-block">{{ game.size or 'غير محدد' }}</span>
+                            </p>
+                        </div>
+
+                        <button onclick="openGameModal({{ game.id }})"
+                            class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
+                            <span>التفاصيل</span>
+                            <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
 
         <div id="emptyState" class="hidden text-center py-24 bg-white/[0.02] rounded-3xl border border-dashed border-white/10 mt-6"></div>
 
@@ -247,6 +304,16 @@
         const grid = document.getElementById('gamesGrid');
         const loader = document.getElementById('loader');
         const emptyState = document.getElementById('emptyState');
+
+        // Track whether games were server-rendered (default false so it's always declared)
+        let isServerRendered = false;
+
+        // Hide loader and show grid if games are server-rendered
+        {% if games %}
+        isServerRendered = true;
+        loader.classList.add('hidden');
+        grid.classList.remove('hidden');
+        {% endif %}
 
         // SECURITY: Universal HTML Sanitizer Helper (Anti DOM-XSS)
         function escapeHtml(unsafeStr) {
@@ -359,7 +426,7 @@
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                            <img src="/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         ${game.is_arabic == 1 ? `
@@ -476,7 +543,7 @@
                             </div>
 
                             <div class="flex flex-col gap-2 pt-3 md:pt-4 border-t border-white/5">
-                                <a href="download.html?id=${Number(g.id) || 0}" class="w-full bg-cyan-400 hover:bg-cyan-300 text-black text-center py-3 rounded-xl text-sm font-black shadow-[0_0_15px_rgba(102,252,241,0.3)] transition">الانتقال لصفحة التحميل</a>
+                                <a href="/game/${Number(g.id) || 0}-${escapeHtml(g.slug || 'game')}" class="w-full bg-cyan-400 hover:bg-cyan-300 text-black text-center py-3 rounded-xl text-sm font-black shadow-[0_0_15px_rgba(102,252,241,0.3)] transition">الانتقال لصفحة التحميل</a>
 
                                 <div class="flex gap-2">
                                     ${safeYoutube ? `<a href="${escapeHtml(safeYoutube)}" target="_blank" class="flex-1 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 text-center py-2 rounded-xl text-xs font-bold transition"><i class="fa-brands fa-youtube ml-1"></i> عرض التريلر</a>` : ''}
@@ -502,7 +569,9 @@
             if (e.target === document.getElementById('gameModal')) closeModal();
         });
 
-        window.addEventListener('DOMContentLoaded', () => fetchGames());
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!isServerRendered) fetchGames();
+        });
     </script>
 
     <!-- Adsterra Social Bar -->
