@@ -3,7 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viking Download</title>
+    <title>{{ seo_meta.title }}</title>
+    <meta name="description" content="{{ seo_meta.description }}">
+    <link rel="canonical" href="{{ seo_meta.canonical_url }}">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="{{ seo_meta.title }}">
+    <meta property="og:description" content="{{ seo_meta.description }}">
+    <meta property="og:image" content="{{ game.cover_image }}">
+    <meta property="og:type" content="video.game">
+    <meta property="og:url" content="{{ seo_meta.canonical_url }}">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_meta.title }}">
+    <meta name="twitter:description" content="{{ seo_meta.description }}">
+    <meta name="twitter:image" content="{{ game.cover_image }}">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">{{ json_ld_json | safe }}</script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -273,9 +291,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3 group">
-                    <img src="image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
+                    <img src="/image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
                 </div>
-                <a href="index.html" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 border border-white/5 transition flex items-center gap-2">
+                <a href="/" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 border border-white/5 transition flex items-center gap-2">
                     <i class="fa-solid fa-arrow-right"></i>
                     <span>العودة للصفحة الرئيسية</span>
                 </a>
@@ -296,7 +314,7 @@
         <div id="errorBox" class="hidden text-center py-20 bg-[#151821] rounded-3xl border border-red-500/20 p-8">
             <i class="fa-solid fa-circle-exclamation text-5xl text-red-400 mb-4"></i>
             <h2 id="errorText" class="text-xl font-bold text-white">حدث خطأ ما</h2>
-            <a href="index.html" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition">الرئيسية</a>
+            <a href="/" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition">الرئيسية</a>
         </div>
 
         <!-- Game Content -->
@@ -314,7 +332,7 @@
                         <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
                     </div>
 
-                    <h1 id="gTitle" class="text-2xl sm:text-3xl font-black text-white mt-3 leading-tight"></h1>
+                    <h1 id="gTitle" class="text-2xl sm:text-3xl font-black text-white mt-3 leading-tight">{{ seo_meta.h1 }}</h1>
 
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
                         <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
@@ -511,6 +529,7 @@
 
 
     <!-- ===== SCRIPTS ===== -->
+    <script type="application/json" id="__INITIAL_GAME__">{{ game_json | safe }}</script>
     <script>
         // ─── CONFIG ───────────────────────────────────────────────────────────────
         // Swap this with your live Render production API URL when deploying.
@@ -522,6 +541,7 @@
         let currentGameData     = null;
         let activeUrlToRedirect = "";
         let countdownTimer      = null;
+        let isServerRendered    = false;  // Track if data came from SSR
 
         // ─── URL PARAMS ───────────────────────────────────────────────────────────
         const urlParams = new URLSearchParams(window.location.search);
@@ -582,6 +602,23 @@
 
         // ─── INIT ─────────────────────────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', () => {
+            // First check for server-embedded game data (SSR)
+            const initialGameEl = document.getElementById('__INITIAL_GAME__');
+            if (initialGameEl) {
+                try {
+                    const game = JSON.parse(initialGameEl.textContent);
+                    if (game && typeof game === 'object') {
+                        isServerRendered = true;
+                        currentGameData = game;
+                        renderPageUI(currentGameData);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse __INITIAL_GAME__:', e);
+                }
+            }
+            
+            // Fall back to URL param-based fetch (for old ?id= links or direct access)
             if (!gameId || !isValidGameId(gameId)) {
                 triggerError("رابط غير صالح");
                 return;
@@ -619,7 +656,14 @@
             document.getElementById('pageLoader').classList.add('hidden');
             document.getElementById('gameContent').classList.remove('hidden');
 
-            document.getElementById('gTitle').textContent   = game.title;
+            // Only overwrite H1 if data came from API fallback (not SSR)
+            // When SSR, H1 already contains the correct server-rendered value
+            if (!isServerRendered) {
+                // Compute h1-style string matching build_seo_meta() template in main.py
+                const h1Text = `${game.title} ${game.console.toUpperCase()} PKG Download`;
+                document.getElementById('gTitle').textContent = h1Text;
+            }
+
             document.getElementById('gConsole').textContent = game.console;
             document.getElementById('gSize').textContent    = game.size    || 'غير محدد';
             document.getElementById('gVersion').textContent = game.version || 'v1.0';
