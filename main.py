@@ -577,9 +577,9 @@ def game_page(id_slug: str, request: Request):
     game_json = json.dumps(game, default=str).replace('<', '\\u003c')
     
     return templates.TemplateResponse(
-        "download.html",
-        {
-            "request": request,
+        request=request,
+        name="download.html",
+        context={
             "seo_meta": seo_meta,
             "game": game,
             "game_json": game_json,
@@ -608,9 +608,9 @@ def index_page(request: Request):
     }
     
     return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
+        request=request,
+        name="index.html",
+        context={
             "seo_meta": seo_meta,
             "games": games
         }
