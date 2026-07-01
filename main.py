@@ -3,14 +3,18 @@ import psycopg2.extras
 import os
 import math
 import time
+import re
+import json
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional, List
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, field_validator
 
 # ==========================================
@@ -18,6 +22,8 @@ from pydantic import BaseModel, field_validator
 # ==========================================
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 security_scheme = HTTPBearer()
+SITE_NAME = "VK Store"
+SITE_URL = "https://vk-store.onrender.com"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -49,6 +55,73 @@ def get_db_connection():
         raise RuntimeError("DATABASE_URL environment variable is not set.")
     conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
+
+
+def slugify(title: str, console: str) -> str:
+    """
+    Generate a URL-friendly slug from title and console.
+    Falls back to '{console}-game' if title has no transliterable characters.
+    """
+    # Transliterate Arabic and other non-ASCII characters to ASCII approximations
+    # Basic Arabic to Latin transliteration map
+    arabic_map = {
+        'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa', 'ب': 'b', 'ت': 't', 'ث': 'th',
+        'ج': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z',
+        'س': 's', 'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a',
+        'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+        'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a', 'ة': 'a', 'ء': ''
+    }
+    
+    # Apply Arabic transliteration
+    transliterated = ''
+    for char in title:
+        transliterated += arabic_map.get(char, char)
+    
+    # Convert to lowercase
+    slug = transliterated.lower()
+    
+    # Replace non-alphanumeric characters with hyphens
+    slug = re.sub(r'[^a-z0-9]+', '-', slug)
+    
+    # Strip leading/trailing hyphens
+    slug = slug.strip('-')
+    
+    # Collapse multiple hyphens
+    slug = re.sub(r'-+', '-', slug)
+    
+    # If slug is empty (pure non-transliterable), fall back to console-based slug
+    if not slug:
+        slug = f"{console.lower()}-game"
+    
+    return slug
+
+
+def build_seo_meta(game: dict) -> dict:
+    """
+    Generate SEO metadata for a game page.
+    Returns dict with title, description, h1, and canonical_url.
+    """
+    # Title template
+    title = f"{game['title']} {game['console'].upper()} PKG Download + Update + DLC | {SITE_NAME}"
+    
+    # Description: keyword-rich but natural single sentence
+    if game.get('description') and game['description'].strip():
+        description = game['description'].strip()
+    else:
+        description = f"Download {game['title']} for {game['console'].upper()}. Includes update, DLC, fast download links, screenshots, and installation guide."
+    
+    # H1 template
+    h1 = f"{game['title']} {game['console'].upper()} PKG Download"
+    
+    # Canonical URL (full URL, not just path)
+    canonical_url = f"{SITE_URL}/game/{game['id']}-{game['slug']}"
+    
+    return {
+        "title": title,
+        "description": description,
+        "h1": h1,
+        "canonical_url": canonical_url
+    }
 
 
 def init_db():
@@ -84,6 +157,8 @@ def init_db():
         "extra_2_label": "TEXT",
         "extra_2_url":   "TEXT",
         "password":      "TEXT",
+        "slug":          "TEXT",
+        "updated_at":    "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
     }
 
     for col_name, col_def in columns_to_add.items():
@@ -99,6 +174,33 @@ def init_db():
             cursor.execute(f"ALTER TABLE games ADD COLUMN {col_name} {col_def}")
 
     conn.commit()
+    
+    # Backfill routine: populate slug and updated_at for existing rows where slug IS NULL
+    cursor.execute("SELECT id, title, console FROM games WHERE slug IS NULL")
+    rows_to_backfill = cursor.fetchall()
+    
+    for row in rows_to_backfill:
+        game_id = row['id']
+        title = row['title']
+        console = row['console']
+        
+        # Generate slug
+        base_slug = slugify(title, console)
+        
+        # Check for duplicates and ensure uniqueness
+        cursor.execute("SELECT id FROM games WHERE slug = %s AND id != %s", (base_slug, game_id))
+        if cursor.fetchone():
+            unique_slug = f"{base_slug}-{game_id}"
+        else:
+            unique_slug = base_slug
+        
+        # Update the row
+        cursor.execute(
+            "UPDATE games SET slug = %s, updated_at = %s WHERE id = %s",
+            (unique_slug, datetime.now(), game_id)
+        )
+    
+    conn.commit()
     conn.close()
 
 
@@ -109,6 +211,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Vk Store API", lifespan=lifespan)
+
+# Mount static files for images and banners
+app.mount("/image", StaticFiles(directory="image"), name="image")
+app.mount("/banners", StaticFiles(directory="banners"), name="banners")
+
+# Set up Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 ALLOWED_ORIGINS = ["*"]
 
@@ -141,6 +250,8 @@ class GameBase(BaseModel):
     extra_2_label: Optional[str] = ""
     extra_2_url: Optional[str] = ""
     password: Optional[str] = ""
+    slug: Optional[str] = ""
+    updated_at: Optional[datetime] = None
 
     @field_validator('console')
     @classmethod
@@ -180,7 +291,9 @@ class GameUpdate(GameBase):
 
 class GameResponse(GameBase):
     id: int
-    created_at: datetime  # ✅ FIX: was `str` — PostgreSQL TIMESTAMP columns are returned as datetime objects
+    created_at: datetime
+    slug: str
+    updated_at: datetime
 
 
 # ==========================================
@@ -290,23 +403,39 @@ def create_game(game: GameCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Compute slug from title and console
+    base_slug = slugify(game.title, game.console)
+    slug = base_slug  # Temporary, will update after getting ID if duplicate exists
+
     query = """
         INSERT INTO games (
             title, console, cover_image, description, size,
             version, youtube_link, game_link, update_link, dlc_link, is_arabic,
-            extra_1_label, extra_1_url, extra_2_label, extra_2_url, password
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            extra_1_label, extra_1_url, extra_2_label, extra_2_url, password, slug, updated_at
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
         game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label,
-        game.extra_2_url, game.password
+        game.extra_2_url, game.password, slug, datetime.now()
     )
 
     cursor.execute(query, values)
     new_game_id = cursor.fetchone()["id"]
+    
+    # If slug was duplicate, update it with ID suffix
+    cursor.execute("SELECT slug FROM games WHERE id = %s", (new_game_id,))
+    current_slug = cursor.fetchone()["slug"]
+    if current_slug == base_slug:
+        cursor.execute("SELECT COUNT(*) as count FROM games WHERE slug = %s", (base_slug,))
+        count = cursor.fetchone()["count"]
+        if count > 1:
+            # Update slug with ID suffix to ensure uniqueness
+            unique_slug = f"{base_slug}-{new_game_id}"
+            cursor.execute("UPDATE games SET slug = %s WHERE id = %s", (unique_slug, new_game_id))
+    
     conn.commit()
 
     cursor.execute("SELECT * FROM games WHERE id = %s", (new_game_id,))
@@ -330,19 +459,28 @@ def update_game(id: int, game: GameUpdate):
         conn.close()
         raise HTTPException(status_code=404, detail="اللعبة المراد تعديلها غير موجودة")
 
+    # Compute new slug from updated title and console
+    new_slug = slugify(game.title, game.console)
+    
+    # Check for duplicate slugs (excluding current game)
+    cursor.execute("SELECT id FROM games WHERE slug = %s AND id != %s", (new_slug, id))
+    if cursor.fetchone():
+        # Slug exists for another game, append ID suffix
+        new_slug = f"{new_slug}-{id}"
+
     query = """
         UPDATE games SET
             title = %s, console = %s, cover_image = %s, description = %s, size = %s,
             version = %s, youtube_link = %s, game_link = %s, update_link = %s, dlc_link = %s,
             is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_2_label = %s,
-            extra_2_url = %s, password = %s
+            extra_2_url = %s, password = %s, slug = %s, updated_at = %s
         WHERE id = %s
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
         game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label,
-        game.extra_2_url, game.password, id
+        game.extra_2_url, game.password, new_slug, datetime.now(), id
     )
 
     cursor.execute(query, values)
@@ -374,6 +512,163 @@ def delete_game(id: int):
     conn.close()
 
     return {"message": f"تم حذف اللعبة ذات الرقم التعريفي {id} بنجاح"}
+
+
+# ==========================================
+# 7. SSR Routes & SEO
+# ==========================================
+
+@app.get("/download.html")
+def redirect_download_page(id: Optional[int] = Query(None)):
+    """Redirect old ?id= query param URLs to new SEO-friendly /game/{id}-{slug} URLs"""
+    if id is None or not str(id).isdigit():
+        # No valid ID, preserve current error behavior by redirecting to home
+        return RedirectResponse(url="/")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, slug FROM games WHERE id = %s", (id,))
+    game = cursor.fetchone()
+    conn.close()
+    
+    if not game:
+        # Game not found, redirect to home
+        return RedirectResponse(url="/")
+    
+    # 301 redirect to new SEO-friendly URL
+    return RedirectResponse(url=f"/game/{game['id']}-{game['slug']}", status_code=301)
+
+
+@app.get("/game/{id_slug}")
+def game_page(id_slug: str, request: Request):
+    """Render individual game download page with SEO metadata"""
+    # Parse the leading integer ID from the path (before the first hyphen)
+    parts = id_slug.split('-')
+    if not parts or not parts[0].isdigit():
+        raise HTTPException(status_code=404, detail="Invalid game URL")
+    
+    game_id = int(parts[0])
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM games WHERE id = %s", (game_id,))
+    game = cursor.fetchone()
+    conn.close()
+    
+    if not game:
+        raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
+    
+    # Build SEO metadata
+    seo_meta = build_seo_meta(game)
+    
+    # Build JSON-LD structured data
+    json_ld_data = {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": game['title'],
+        "operatingSystem": game['console'].upper(),
+        "gamePlatform": game['console'].upper(),
+        "description": seo_meta['description'],
+        "image": game['cover_image'] or ""
+    }
+    json_ld_json = json.dumps(json_ld_data, default=str).replace('<', '\\u003c')
+    
+    # Convert game dict to JSON for inline embedding
+    game_json = json.dumps(game, default=str).replace('<', '\\u003c')
+    
+    return templates.TemplateResponse(
+        "download.html",
+        {
+            "request": request,
+            "seo_meta": seo_meta,
+            "game": game,
+            "game_json": game_json,
+            "json_ld_json": json_ld_json
+        }
+    )
+
+
+@app.get("/")
+def index_page(request: Request):
+    """Render homepage with server-side rendered first page of games"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Get first page of games (limit 12, same as default API)
+    cursor.execute("SELECT * FROM games ORDER BY id DESC LIMIT 12")
+    games = cursor.fetchall()
+    conn.close()
+    
+    # Default homepage SEO meta
+    seo_meta = {
+        "title": f"{SITE_NAME} | Download PS5, PS4, PS3, PS2, PS1, PC, Xbox, PSP Games",
+        "description": f"Download the latest games for all platforms including PS5, PS4, PS3, PS2, PS1, PC, Xbox 360, and PSP. Fast direct links, updates, DLCs, and installation guides.",
+        "h1": f"{SITE_NAME} - Game Downloads",
+        "canonical_url": f"{SITE_URL}/"
+    }
+    
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "seo_meta": seo_meta,
+            "games": games
+        }
+    )
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    """Generate XML sitemap for all games"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, slug, updated_at FROM games ORDER BY id ASC")
+    games = cursor.fetchall()
+    conn.close()
+    
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Add homepage
+    xml_content += f'  <url>\n'
+    xml_content += f'    <loc>{SITE_URL}/</loc>\n'
+    xml_content += f'    <changefreq>daily</changefreq>\n'
+    xml_content += f'    <priority>1.0</priority>\n'
+    xml_content += f'  </url>\n'
+    
+    # Add game pages
+    for game in games:
+        loc = f"{SITE_URL}/game/{game['id']}-{game['slug']}"
+        lastmod = game['updated_at'].strftime('%Y-%m-%d') if game['updated_at'] else datetime.now().strftime('%Y-%m-%d')
+        
+        xml_content += f'  <url>\n'
+        xml_content += f'    <loc>{loc}</loc>\n'
+        xml_content += f'    <lastmod>{lastmod}</lastmod>\n'
+        xml_content += f'    <changefreq>weekly</changefreq>\n'
+        xml_content += f'    <priority>0.8</priority>\n'
+        xml_content += f'  </url>\n'
+    
+    xml_content += '</urlset>'
+    
+    return Response(
+        content=xml_content,
+        media_type="application/xml"
+    )
+
+
+@app.get("/robots.txt")
+def robots():
+    """Generate robots.txt file"""
+    content = f"""User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: {SITE_URL}/sitemap.xml
+"""
+    return Response(
+        content=content,
+        media_type="text/plain"
+    )
 
 
 # ==========================================
