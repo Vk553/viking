@@ -267,6 +267,18 @@
                                 <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">{{ game.size or 'غير محدد' }}</span>
                             </p>
+                            {% if game.region and game.region.strip() %}
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-earth-americas text-[9px] md:text-[10px] text-gray-500"></i>
+                                <span dir="ltr" class="inline-block">{{ game.region }}</span>
+                            </p>
+                            {% endif %}
+                            {% if game.game_code and game.game_code.strip() %}
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-barcode text-[9px] md:text-[10px] text-gray-500"></i>
+                                <span dir="ltr" class="inline-block">{{ game.game_code }}</span>
+                            </p>
+                            {% endif %}
                         </div>
 
                         <button onclick="openGameModal({{ game.id }})"
@@ -455,6 +467,16 @@
                                 <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">${escapeHtml(game.size || 'غير محدد')}</span>
                             </p>
+                            ${game.region && game.region.trim() ? `
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-earth-americas text-[9px] md:text-[10px] text-gray-500"></i>
+                                <span dir="ltr" class="inline-block">${escapeHtml(game.region)}</span>
+                            </p>` : ''}
+                            ${game.game_code && game.game_code.trim() ? `
+                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                                <i class="fa-solid fa-barcode text-[9px] md:text-[10px] text-gray-500"></i>
+                                <span dir="ltr" class="inline-block">${escapeHtml(game.game_code)}</span>
+                            </p>` : ''}
                         </div>
 
                         <button onclick="openGameModal(${Number(game.id) || 0})"
@@ -540,6 +562,8 @@
                             <div class="grid grid-cols-2 gap-2 bg-white/[0.03] p-3 rounded-xl border border-white/5 text-xs">
                                 <div><span class="text-gray-500 block">الحجم:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.size || '--')}</span></div>
                                 <div><span class="text-gray-500 block">الإصدار:</span> <span class="font-bold text-gray-200">${escapeHtml(g.version || '--')}</span></div>
+                                ${g.region && g.region.trim() ? `<div><span class="text-gray-500 block">المنطقة:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.region)}</span></div>` : ''}
+                                ${g.game_code && g.game_code.trim() ? `<div><span class="text-gray-500 block">كود اللعبة:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.game_code)}</span></div>` : ''}
                             </div>
 
                             <div class="flex flex-col gap-2 pt-3 md:pt-4 border-t border-white/5">
