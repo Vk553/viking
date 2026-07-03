@@ -141,19 +141,27 @@ def init_db():
             version TEXT,
             youtube_link TEXT,
             game_link TEXT,
+            game_link_original TEXT,
             update_link TEXT,
+            update_link_original TEXT,
             dlc_link TEXT,
+            dlc_link_original TEXT,
             is_arabic INTEGER DEFAULT 0,
             extra_1_label TEXT,
             extra_1_url TEXT,
+            extra_1_url_original TEXT,
             extra_2_label TEXT,
             extra_2_url TEXT,
+            extra_2_url_original TEXT,
             extra_3_label TEXT,
             extra_3_url TEXT,
+            extra_3_url_original TEXT,
             extra_4_label TEXT,
             extra_4_url TEXT,
+            extra_4_url_original TEXT,
             extra_5_label TEXT,
             extra_5_url TEXT,
+            extra_5_url_original TEXT,
             region TEXT,
             game_code TEXT,
             password TEXT,
@@ -181,6 +189,15 @@ def init_db():
         "extra_5_url": "TEXT",
         "region": "TEXT",
         "game_code": "TEXT",
+        # ── ORIGINAL URL COLUMNS (upgrade) ────────────────────
+        "game_link_original": "TEXT",
+        "update_link_original": "TEXT",
+        "dlc_link_original": "TEXT",
+        "extra_1_url_original": "TEXT",
+        "extra_2_url_original": "TEXT",
+        "extra_3_url_original": "TEXT",
+        "extra_4_url_original": "TEXT",
+        "extra_5_url_original": "TEXT",
     }
 
     for col_name, col_def in columns_to_add.items():
@@ -264,20 +281,28 @@ class GameBase(BaseModel):
     version: Optional[str] = ""
     youtube_link: Optional[str] = ""
     game_link: Optional[str] = ""
+    game_link_original: Optional[str] = ""
     update_link: Optional[str] = ""
+    update_link_original: Optional[str] = ""
     dlc_link: Optional[str] = ""
+    dlc_link_original: Optional[str] = ""
     is_arabic: Optional[int] = 0
     extra_1_label: Optional[str] = ""
     extra_1_url: Optional[str] = ""
+    extra_1_url_original: Optional[str] = ""
     extra_2_label: Optional[str] = ""
     extra_2_url: Optional[str] = ""
+    extra_2_url_original: Optional[str] = ""
     # ── NEW FIELDS ──────────────────────────────
     extra_3_label: Optional[str] = ""
     extra_3_url: Optional[str] = ""
+    extra_3_url_original: Optional[str] = ""
     extra_4_label: Optional[str] = ""
     extra_4_url: Optional[str] = ""
+    extra_4_url_original: Optional[str] = ""
     extra_5_label: Optional[str] = ""
     extra_5_url: Optional[str] = ""
+    extra_5_url_original: Optional[str] = ""
     region: Optional[str] = ""
     game_code: Optional[str] = ""
     # ────────────────────────────────────────────
@@ -443,21 +468,20 @@ def create_game(game: GameCreate):
     query = """
         INSERT INTO games (
             title, console, cover_image, description, size,
-            version, youtube_link, game_link, update_link, dlc_link, is_arabic,
-            extra_1_label, extra_1_url, extra_2_label, extra_2_url,
-            extra_3_label, extra_3_url, extra_4_label, extra_4_url,
-            extra_5_label, extra_5_url, region, game_code,
+            version, youtube_link, game_link, game_link_original, update_link, update_link_original, dlc_link, dlc_link_original, is_arabic,
+            extra_1_label, extra_1_url, extra_1_url_original, extra_2_label, extra_2_url, extra_2_url_original,
+            extra_3_label, extra_3_url, extra_3_url_original, extra_4_label, extra_4_url, extra_4_url_original,
+            extra_5_label, extra_5_url, extra_5_url_original, region, game_code,
             password, slug, updated_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-              %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
-        game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
-        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label, game.extra_2_url,
-        game.extra_3_label, game.extra_3_url, game.extra_4_label, game.extra_4_url,
-        game.extra_5_label, game.extra_5_url, game.region, game.game_code,
+        game.version, game.youtube_link, game.game_link, game.game_link_original, game.update_link, game.update_link_original, game.dlc_link, game.dlc_link_original,
+        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
+        game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
+        game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
         game.password, slug, datetime.now()
     )
 
@@ -510,19 +534,19 @@ def update_game(id: int, game: GameUpdate):
     query = """
         UPDATE games SET
             title = %s, console = %s, cover_image = %s, description = %s, size = %s,
-            version = %s, youtube_link = %s, game_link = %s, update_link = %s, dlc_link = %s,
-            is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_2_label = %s, extra_2_url = %s,
-            extra_3_label = %s, extra_3_url = %s, extra_4_label = %s, extra_4_url = %s,
-            extra_5_label = %s, extra_5_url = %s, region = %s, game_code = %s,
+            version = %s, youtube_link = %s, game_link = %s, game_link_original = %s, update_link = %s, update_link_original = %s, dlc_link = %s, dlc_link_original = %s,
+            is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_1_url_original = %s, extra_2_label = %s, extra_2_url = %s, extra_2_url_original = %s,
+            extra_3_label = %s, extra_3_url = %s, extra_3_url_original = %s, extra_4_label = %s, extra_4_url = %s, extra_4_url_original = %s,
+            extra_5_label = %s, extra_5_url = %s, extra_5_url_original = %s, region = %s, game_code = %s,
             password = %s, slug = %s, updated_at = %s
         WHERE id = %s
     """
     values = (
         game.title, game.console, game.cover_image, game.description, game.size,
-        game.version, game.youtube_link, game.game_link, game.update_link, game.dlc_link,
-        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_2_label, game.extra_2_url,
-        game.extra_3_label, game.extra_3_url, game.extra_4_label, game.extra_4_url,
-        game.extra_5_label, game.extra_5_url, game.region, game.game_code,
+        game.version, game.youtube_link, game.game_link, game.game_link_original, game.update_link, game.update_link_original, game.dlc_link, game.dlc_link_original,
+        game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
+        game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
+        game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
         game.password, new_slug, datetime.now(), id
     )
 
