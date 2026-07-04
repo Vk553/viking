@@ -13,7 +13,6 @@ from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse, Response
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, field_validator
 
@@ -250,10 +249,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Vk Store API", lifespan=lifespan)
-
-# Mount static files for images and banners
-app.mount("/image", StaticFiles(directory="image"), name="image")
-app.mount("/banners", StaticFiles(directory="banners"), name="banners")
 
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="templates")
