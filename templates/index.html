@@ -236,7 +236,7 @@
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
-                        <img src="{{ game.cover_image or 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' }}" alt="{{ game.title }}"
+                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://wsrv.nl/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}" alt="{{ game.title }}"
                              onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80'"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
@@ -359,6 +359,14 @@
             return trimmed.startsWith('http://') || trimmed.startsWith('https://');
         }
 
+        function getProxiedImageUrl(url) {
+            if (!url || typeof url !== 'string') return url;
+            if (url.includes('steamgriddb.com')) {
+                return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+            }
+            return url;
+        }
+
         // دالة تحديد مسار البانر بناءً على اسم المنصة
         function getConsoleBanner(consoleName) {
             if (!consoleName) return "banners/default.png";
@@ -452,7 +460,7 @@
             games.forEach(game => {
                 const fallbackImg = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80";
                 // SECURITY: Apply URL validation to cover_image
-                const cover = isSafeUrl(game.cover_image) ? game.cover_image : fallbackImg;
+                const cover = isSafeUrl(game.cover_image) ? getProxiedImageUrl(game.cover_image) : fallbackImg;
                 const bannerPath = getConsoleBanner(game.console);
 
                 const card = `
@@ -573,7 +581,7 @@
                 const g = await res.json();
 
                 // SECURITY: Apply URL validation to cover_image and youtube_link
-                const safeCover = isSafeUrl(g.cover_image) ? g.cover_image : 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
+                const safeCover = isSafeUrl(g.cover_image) ? getProxiedImageUrl(g.cover_image) : 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
                 const safeYoutube = isSafeUrl(g.youtube_link) ? g.youtube_link : null;
 
                 content.innerHTML = `
