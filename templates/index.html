@@ -6,6 +6,9 @@
     <title>{{ seo_meta.title }}</title>
     <meta name="description" content="{{ seo_meta.description }}">
     <link rel="canonical" href="{{ seo_meta.canonical_url }}">
+    <link rel="icon" type="image/jpeg" href="/image/icon.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="/image/icon.jpg">
+    <link rel="apple-touch-icon" href="/image/logo.jpg">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -292,6 +295,10 @@
             {% endif %}
         </div>
 
+        <div id="scrollLoader" class="hidden flex justify-center py-6">
+            <i class="fa-solid fa-spinner fa-spin text-cyan-400 text-xl"></i>
+        </div>
+
         <div id="emptyState" class="hidden text-center py-24 bg-white/[0.02] rounded-3xl border border-dashed border-white/10 mt-6"></div>
 
     </main>
@@ -312,10 +319,15 @@
         let activeConsole = "";
         let activeArabic = "";
         let searchTimeout = null;
+        let currentPage = 1;
+        let isLoadingMore = false;
+        let hasMoreGames = true;
+        const GAMES_PER_PAGE = 24;
 
         const grid = document.getElementById('gamesGrid');
         const loader = document.getElementById('loader');
         const emptyState = document.getElementById('emptyState');
+        const scrollLoader = document.getElementById('scrollLoader');
 
         // Track whether games were server-rendered (default false so it's always declared)
         let isServerRendered = false;
@@ -360,14 +372,19 @@
             return "banners/default.jpg";
         }
 
-        async function fetchGames(consoleType = "", searchQuery = "", isArabic = "") {
-            loader.classList.remove('hidden');
-            grid.classList.add('hidden');
-            emptyState.classList.add('hidden');
+        async function fetchGames(consoleType = "", searchQuery = "", isArabic = "", append = false) {
+            if (!append) {
+                loader.classList.remove('hidden');
+                grid.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                currentPage = 1;
+                hasMoreGames = true;
+            }
 
             try {
                 const url = new URL(API_BASE_URL);
-                url.searchParams.append('limit', 50);
+                url.searchParams.append('limit', GAMES_PER_PAGE);
+                url.searchParams.append('page', currentPage);
                 if (consoleType) url.searchParams.append('console', consoleType);
                 if (searchQuery) url.searchParams.append('search', searchQuery);
                 if (isArabic) url.searchParams.append('is_arabic', isArabic);
@@ -381,19 +398,30 @@
                 const rawList = result?.data || result;
                 const gamesList = Array.isArray(rawList) ? rawList : [];
 
-                renderGames(gamesList, searchQuery);
+                // Update hasMoreGames based on pagination
+                const totalPages = result?.pagination?.total_pages || 1;
+                hasMoreGames = currentPage < totalPages;
+                if (gamesList.length < GAMES_PER_PAGE) {
+                    hasMoreGames = false;
+                }
+
+                renderGames(gamesList, searchQuery, append);
 
             } catch (error) {
                 console.error("Error:", error);
-                loader.innerHTML = `<p class="text-red-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> تأكد أن خادم FastAPI يعمل على المنفذ 8000</p>`;
+                if (!append) {
+                    loader.innerHTML = `<p class="text-red-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> تأكد أن خادم FastAPI يعمل على المنفذ 8000</p>`;
+                }
             }
         }
 
-        function renderGames(games, searchQuery = "") {
-            loader.classList.add('hidden');
-            grid.innerHTML = "";
+        function renderGames(games, searchQuery = "", append = false) {
+            if (!append) {
+                loader.classList.add('hidden');
+                grid.innerHTML = "";
+            }
 
-            if (games.length === 0) {
+            if (!append && games.length === 0) {
                 grid.classList.add('hidden');
 
                 if (searchQuery.trim() !== "") {
@@ -500,7 +528,9 @@
             });
             e.currentTarget.className = "filter-btn active px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 bg-cyan-400 text-black shadow-[0_0_12px_rgba(102,252,241,0.4)]";
 
-            fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic);
+            currentPage = 1;
+            hasMoreGames = true;
+            fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic, false);
         }
 
         function filterArabic(e, isArabicValue) {
@@ -511,13 +541,17 @@
             });
             e.currentTarget.className = "sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm";
 
-            fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic);
+            currentPage = 1;
+            hasMoreGames = true;
+            fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic, false);
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                fetchGames(activeConsole, e.target.value, activeArabic);
+                currentPage = 1;
+                hasMoreGames = true;
+                fetchGames(activeConsole, e.target.value, activeArabic, false);
             }, 400);
         });
 
@@ -593,8 +627,27 @@
             if (e.target === document.getElementById('gameModal')) closeModal();
         });
 
+        function initInfiniteScroll() {
+            const observer = new IntersectionObserver(async (entries) => {
+                if (!entries[0].isIntersecting) return;
+                if (isLoadingMore || !hasMoreGames) return;
+
+                isLoadingMore = true;
+                scrollLoader.classList.remove('hidden');
+                currentPage += 1;
+
+                await fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic, true);
+
+                scrollLoader.classList.add('hidden');
+                isLoadingMore = false;
+            }, { rootMargin: '400px' });
+
+            observer.observe(scrollLoader);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             if (!isServerRendered) fetchGames();
+            initInfiniteScroll();
         });
     </script>
 
