@@ -295,6 +295,7 @@
             {% endif %}
         </div>
 
+        <div id="scrollSentinel" class="w-full h-4"></div>
         <div id="scrollLoader" class="hidden flex justify-center py-6">
             <i class="fa-solid fa-spinner fa-spin text-cyan-400 text-xl"></i>
         </div>
@@ -328,6 +329,7 @@
         const loader = document.getElementById('loader');
         const emptyState = document.getElementById('emptyState');
         const scrollLoader = document.getElementById('scrollLoader');
+        const scrollSentinel = document.getElementById('scrollSentinel');
 
         // Track whether games were server-rendered (default false so it's always declared)
         let isServerRendered = false;
@@ -642,7 +644,7 @@
                 isLoadingMore = false;
             }, { rootMargin: '400px' });
 
-            observer.observe(scrollLoader);
+            observer.observe(scrollSentinel);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
