@@ -236,8 +236,12 @@
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
-                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://cdn.statically.io/img/{{ game.cover_image | replace('https://', '') | replace('http://', '') }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}" alt="{{ game.title }}"
-                             onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80'"
+                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                             alt="{{ game.title }}"
+                             {% if game.cover_image and 'steamgriddb.com' in game.cover_image %}
+                             data-original="{{ game.cover_image | urlencode }}"
+                             onerror="handleImageProxyError(this, decodeURIComponent(this.dataset.original), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
+                             {% endif %}
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
@@ -359,13 +363,27 @@
             return trimmed.startsWith('http://') || trimmed.startsWith('https://');
         }
 
+        const IMAGE_PROXY_CHAIN = [
+            (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
+            (url) => `https://vk-image-proxy.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
+            (url) => url
+        ];
+
         function getProxiedImageUrl(url) {
             if (!url || typeof url !== 'string') return url;
-            if (url.includes('steamgriddb.com')) {
-                const stripped = url.replace(/^https?:\/\//, '');
-                return `https://cdn.statically.io/img/${stripped}`;
+            if (!url.includes('steamgriddb.com')) return url;
+            return IMAGE_PROXY_CHAIN[0](url);
+        }
+
+        function handleImageProxyError(imgEl, originalUrl, fallbackImg) {
+            const attempt = parseInt(imgEl.dataset.proxyAttempt || '0', 10) + 1;
+            imgEl.dataset.proxyAttempt = attempt;
+            if (attempt < IMAGE_PROXY_CHAIN.length) {
+                imgEl.src = IMAGE_PROXY_CHAIN[attempt](originalUrl);
+            } else {
+                imgEl.onerror = null;
+                imgEl.src = fallbackImg;
             }
-            return url;
         }
 
         // دالة تحديد مسار البانر بناءً على اسم المنصة
@@ -463,6 +481,9 @@
                 // SECURITY: Apply URL validation to cover_image
                 const cover = isSafeUrl(game.cover_image) ? getProxiedImageUrl(game.cover_image) : fallbackImg;
                 const bannerPath = getConsoleBanner(game.console);
+                const proxyErrorAttr = (game.cover_image && game.cover_image.includes('steamgriddb.com'))
+                    ? `onerror="handleImageProxyError(this, '${encodeURIComponent(game.cover_image)}', '${fallbackImg}')"`
+                    : `onerror="this.src='${escapeHtml(fallbackImg)}'"`;
 
                 const card = `
                 <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
@@ -473,7 +494,7 @@
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
                         <img src="${escapeHtml(cover)}" alt="${escapeHtml(game.title)}"
-                             onerror="this.src='${escapeHtml(fallbackImg)}'"
+                             ${proxyErrorAttr}
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
@@ -584,6 +605,10 @@
                 // SECURITY: Apply URL validation to cover_image and youtube_link
                 const safeCover = isSafeUrl(g.cover_image) ? getProxiedImageUrl(g.cover_image) : 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
                 const safeYoutube = isSafeUrl(g.youtube_link) ? g.youtube_link : null;
+                const modalFallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
+                const modalProxyErrorAttr = (g.cover_image && g.cover_image.includes('steamgriddb.com'))
+                    ? `onerror="handleImageProxyError(this, '${encodeURIComponent(g.cover_image)}', '${modalFallback}')"`
+                    : `onerror="this.src='${modalFallback}'"`;
 
                 content.innerHTML = `
                     <div class="modal-sticky-close flex justify-between items-center md:hidden">
@@ -592,7 +617,7 @@
                     </div>
 
                     <div class="flex flex-col md:flex-row gap-4 md:gap-6">
-                        <img src="${escapeHtml(safeCover)}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400'" class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg">
+                        <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr} class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg">
 
                         <div class="flex-1 flex flex-col justify-between gap-3">
                             <div>
