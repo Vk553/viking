@@ -693,17 +693,9 @@
                 document.getElementById('gGameCodeBox').classList.remove('hidden');
             }
 
-            function getProxiedImageUrl(url) {
-                if (!url || typeof url !== 'string') return url;
-                if (url.includes('steamgriddb.com')) {
-                    return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
-                }
-                return url;
-            }
-
             const coverImg = document.getElementById('gCover');
             const fallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400';
-            coverImg.src = (game.cover_image && game.cover_image.trim()) ? getProxiedImageUrl(game.cover_image) : fallback;
+            coverImg.src = (game.cover_image && game.cover_image.trim()) ? game.cover_image : fallback;
             coverImg.onerror = function () { this.onerror = null; this.src = fallback; };
 
             document.getElementById('gDownloads').textContent = (14250 + (game.id * 130)).toLocaleString();
