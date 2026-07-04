@@ -6,9 +6,9 @@
     <title>{{ seo_meta.title }}</title>
     <meta name="description" content="{{ seo_meta.description }}">
     <link rel="canonical" href="{{ seo_meta.canonical_url }}">
-    <link rel="icon" type="image/png" href="/image/favicon.png">
-    <link rel="shortcut icon" type="image/png" href="/image/favicon.png">
-    <link rel="apple-touch-icon" href="/image/favicon.png">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -169,7 +169,7 @@
 
                 <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
-                    <img src="/image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
+                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
                          class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
                 </div>
 
@@ -232,7 +232,7 @@
                 {% for game in games %}
                 <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
                     <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
-                        <img src="/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
+                        <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
@@ -241,7 +241,7 @@
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         {% if game.is_arabic == 1 %}
@@ -361,17 +361,17 @@
 
         // دالة تحديد مسار البانر بناءً على اسم المنصة
         function getConsoleBanner(consoleName) {
-            if (!consoleName) return "banners/default.png";
+            if (!consoleName) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/default.png";
             const cleanName = consoleName.trim().toUpperCase();
-            if (cleanName.includes("PS5")) return "banners/ps5.jpg";
-            if (cleanName.includes("PS4")) return "banners/ps4.jpg";
-            if (cleanName.includes("PS3")) return "banners/ps3.jpg";
-            if (cleanName.includes("PS2")) return "banners/ps2.jpg";
-            if (cleanName.includes("PS1")) return "banners/ps1.jpg";
-            if (cleanName.includes("PC")) return "banners/pc.jpg";
-            if (cleanName.includes("XBOX")) return "banners/xbox.jpg";
-            if (cleanName.includes("PSP")) return "banners/psp.jpg";
-            return "banners/default.jpg";
+            if (cleanName.includes("PS5")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/ps5.jpg";
+            if (cleanName.includes("PS4")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/ps4.jpg";
+            if (cleanName.includes("PS3")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/ps3.jpg";
+            if (cleanName.includes("PS2")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/ps2.jpg";
+            if (cleanName.includes("PS1")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/ps1.jpg";
+            if (cleanName.includes("PC")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/pc.jpg";
+            if (cleanName.includes("XBOX")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/xbox.jpg";
+            if (cleanName.includes("PSP")) return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/psp.jpg";
+            return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/default.jpg";
         }
 
         async function fetchGames(consoleType = "", searchQuery = "", isArabic = "", append = false) {
@@ -468,7 +468,7 @@
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         ${game.is_arabic == 1 ? `
