@@ -13,7 +13,7 @@
     <!-- Open Graph Tags -->
     <meta property="og:title" content="{{ seo_meta.title }}">
     <meta property="og:description" content="{{ seo_meta.description }}">
-    <meta property="og:image" content="{{ game.cover_image }}">
+    <meta property="og:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://cdn.statically.io/img/{{ game.cover_image | replace('https://', '') | replace('http://', '') }}{% else %}{{ game.cover_image }}{% endif %}">
     <meta property="og:type" content="video.game">
     <meta property="og:url" content="{{ seo_meta.canonical_url }}">
 
@@ -21,7 +21,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ seo_meta.title }}">
     <meta name="twitter:description" content="{{ seo_meta.description }}">
-    <meta name="twitter:image" content="{{ game.cover_image }}">
+    <meta name="twitter:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://cdn.statically.io/img/{{ game.cover_image | replace('https://', '') | replace('http://', '') }}{% else %}{{ game.cover_image }}{% endif %}">
 
     <!-- Schema.org Structured Data -->
     <script type="application/ld+json">{{ json_ld_json | safe }}</script>
@@ -693,9 +693,18 @@
                 document.getElementById('gGameCodeBox').classList.remove('hidden');
             }
 
+            function getProxiedImageUrl(url) {
+                if (!url || typeof url !== 'string') return url;
+                if (url.includes('steamgriddb.com')) {
+                    const stripped = url.replace(/^https?:\/\//, '');
+                    return `https://cdn.statically.io/img/${stripped}`;
+                }
+                return url;
+            }
+
             const coverImg = document.getElementById('gCover');
             const fallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400';
-            coverImg.src = (game.cover_image && game.cover_image.trim()) ? game.cover_image : fallback;
+            coverImg.src = (game.cover_image && game.cover_image.trim()) ? getProxiedImageUrl(game.cover_image) : fallback;
             coverImg.onerror = function () { this.onerror = null; this.src = fallback; };
 
             document.getElementById('gDownloads').textContent = (14250 + (game.id * 130)).toLocaleString();
