@@ -661,8 +661,8 @@ def index_page(request: Request):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Get first page of games (limit 12, same as default API)
-    cursor.execute("SELECT * FROM games ORDER BY id DESC LIMIT 12")
+    # Get first page of games (limit 24, matching GAMES_PER_PAGE in index.html)
+    cursor.execute("SELECT * FROM games ORDER BY id DESC LIMIT 24")
     games = cursor.fetchall()
     conn.close()
 
