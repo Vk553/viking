@@ -22,7 +22,6 @@ from pydantic import BaseModel, field_validator
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 security_scheme = HTTPBearer()
 SITE_NAME = "VK Store"
-SITE_URL = "https://vk-store.onrender.com"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -97,7 +96,7 @@ def slugify(title: str, console: str) -> str:
     return slug
 
 
-def build_seo_meta(game: dict) -> dict:
+def build_seo_meta(game: dict, base_url: str) -> dict:
     """
     Generate SEO metadata for a game page.
     Returns dict with title, description, h1, and canonical_url.
@@ -115,7 +114,7 @@ def build_seo_meta(game: dict) -> dict:
     h1 = f"{game['title']} {game['console'].upper()} PKG Download"
 
     # Canonical URL (full URL, not just path)
-    canonical_url = f"{SITE_URL}/game/{game['id']}-{game['slug']}"
+    canonical_url = f"{base_url}/game/{game['id']}-{game['slug']}"
 
     return {
         "title": title,
@@ -621,7 +620,8 @@ def game_page(id_slug: str, request: Request):
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
 
     # Build SEO metadata
-    seo_meta = build_seo_meta(game)
+    base_url = str(request.base_url).rstrip("/")
+    seo_meta = build_seo_meta(game, base_url)
 
     # Build JSON-LD structured data
     json_ld_data = {
@@ -662,11 +662,12 @@ def index_page(request: Request):
     conn.close()
 
     # Default homepage SEO meta
+    base_url = str(request.base_url).rstrip("/")
     seo_meta = {
         "title": f"{SITE_NAME} | Download PS5, PS4, PS3, PS2, PS1, PC, Xbox, PSP Games",
         "description": f"Download the latest games for all platforms including PS5, PS4, PS3, PS2, PS1, PC, Xbox 360, and PSP. Fast direct links, updates, DLCs, and installation guides.",
         "h1": f"{SITE_NAME} - Game Downloads",
-        "canonical_url": f"{SITE_URL}/"
+        "canonical_url": f"{base_url}/"
     }
 
     return templates.TemplateResponse(
@@ -680,8 +681,9 @@ def index_page(request: Request):
 
 
 @app.get("/sitemap.xml")
-def sitemap():
+def sitemap(request: Request):
     """Generate XML sitemap for all games"""
+    base_url = str(request.base_url).rstrip("/")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, slug, updated_at FROM games ORDER BY id ASC")
@@ -693,14 +695,15 @@ def sitemap():
 
     # Add homepage
     xml_content += f'  <url>\n'
-    xml_content += f'    <loc>{SITE_URL}/</loc>\n'
+    xml_content += f'    <loc>{base_url}/</loc>\n'
+    xml_content += f'    <lastmod>{datetime.now().strftime("%Y-%m-%d")}</lastmod>\n'
     xml_content += f'    <changefreq>daily</changefreq>\n'
     xml_content += f'    <priority>1.0</priority>\n'
     xml_content += f'  </url>\n'
 
     # Add game pages
     for game in games:
-        loc = f"{SITE_URL}/game/{game['id']}-{game['slug']}"
+        loc = f"{base_url}/game/{game['id']}-{game['slug']}"
         lastmod = game['updated_at'].strftime('%Y-%m-%d') if game['updated_at'] else datetime.now().strftime('%Y-%m-%d')
 
         xml_content += f'  <url>\n'
@@ -719,13 +722,14 @@ def sitemap():
 
 
 @app.get("/robots.txt")
-def robots():
+def robots(request: Request):
     """Generate robots.txt file"""
+    base_url = str(request.base_url).rstrip("/")
     content = f"""User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: {SITE_URL}/sitemap.xml
+Sitemap: {base_url}/sitemap.xml
 """
     return Response(
         content=content,
