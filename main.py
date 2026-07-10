@@ -238,6 +238,15 @@ def init_db():
         )
 
     conn.commit()
+
+    # ── Performance: trigram index for fast ILIKE search on title ──
+    cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_games_title_trgm
+        ON games USING GIN (title gin_trgm_ops)
+    """)
+    conn.commit()
+
     conn.close()
 
 
