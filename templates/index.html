@@ -170,11 +170,11 @@
                 <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
                     <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
-                         class="h-10 sm:h-14 md:h-20 pointer-events-none select-none">
+                         class="h-10 sm:h-14 md:h-20 pointer-events-none select-none lg:hover:scale-105 transition-transform">
                 </div>
 
                 <!-- Search input -->
-                <div class="relative w-full md:w-72">
+                <div class="relative w-full md:w-72 lg:w-96 xl:w-[420px] lg:focus-within:shadow-[0_0_25px_rgba(102,252,241,0.25)]">
                     <input type="text" id="searchInput" placeholder="ابحث عن اسم لعبة..."
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400 transition-all pr-10 text-white placeholder-gray-500">
                     <i class="fa-solid fa-magnifying-glass absolute right-3 top-3.5 text-gray-500 text-xs"></i>
@@ -182,15 +182,15 @@
 
                 <!-- Filter buttons: horizontal scroll on mobile, wrap on desktop -->
                 <div class="flex items-center bg-white/5 p-1.5 rounded-2xl border border-white/5 w-full md:w-auto" id="filterContainer">
-                    <button onclick="filterGames(event, '')" class="filter-btn active px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 bg-cyan-400 text-black shadow-[0_0_12px_rgba(102,252,241,0.4)]">الكل</button>
-                    <button onclick="filterGames(event, 'PS5')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS5</button>
-                    <button onclick="filterGames(event, 'PS4')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS4</button>
-                    <button onclick="filterGames(event, 'PS3')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS3</button>
-                    <button onclick="filterGames(event, 'PS2')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS2</button>
-                    <button onclick="filterGames(event, 'PS1')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PS1</button>
-                    <button onclick="filterGames(event, 'PC')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PC</button>
-                    <button onclick="filterGames(event, 'XBOX')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">XBOX 360</button>
-                    <button onclick="filterGames(event, 'PSP')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">PSP</button>
+                    <button onclick="filterGames(event, '')" class="filter-btn active px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 bg-cyan-400 text-black shadow-[0_0_12px_rgba(102,252,241,0.4)] lg:hover:-translate-y-0.5">الكل</button>
+                    <button onclick="filterGames(event, 'PS5')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PS5</button>
+                    <button onclick="filterGames(event, 'PS4')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PS4</button>
+                    <button onclick="filterGames(event, 'PS3')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PS3</button>
+                    <button onclick="filterGames(event, 'PS2')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PS2</button>
+                    <button onclick="filterGames(event, 'PS1')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PS1</button>
+                    <button onclick="filterGames(event, 'PC')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PC</button>
+                    <button onclick="filterGames(event, 'XBOX')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">XBOX 360</button>
+                    <button onclick="filterGames(event, 'PSP')" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all lg:hover:-translate-y-0.5">PSP</button>
                 </div>
 
             </div>
@@ -215,10 +215,28 @@
         </div>
     </header>
 
+    <!-- Hero Strip - Desktop Only -->
+    <section class="hidden lg:block relative overflow-hidden bg-gradient-to-r from-darkBg via-cardBg to-darkBg border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black text-white mb-2">
+                        <span class="text-neonAccent">اكتشف</span> عالم الألعاب
+                    </h2>
+                    <p class="text-subText text-sm">أحدث الألعاب لجميع الأجهزة بروابط مباشرة وسريعة</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-black text-neonAccent">1000+</div>
+                    <div class="text-subText text-xs mt-1">لعبة متوفرة</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ═══════════════════════════════════════════
          MAIN CONTENT
     ═══════════════════════════════════════════ -->
-    <main class="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 md:mt-8">
+    <main class="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 md:mt-8 2xl:max-w-[1600px]">
 
         <div id="loader" class="flex flex-col items-center justify-center py-32">
             <div class="w-12 h-12 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></div>
@@ -226,11 +244,11 @@
         </div>
 
         <!-- Grid: 2 columns on mobile for more content density, scales up on larger screens -->
-        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 hidden">
+        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-6 2xl:gap-8 hidden">
             {% if games %}
                 <!-- Server-rendered game cards for SEO/crawlers -->
                 {% for game in games %}
-                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
+                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5 lg:group-hover:shadow-[0_20px_60px_-15px_rgba(102,252,241,0.35)]">
                     <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
                         <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
                     </div>
@@ -242,7 +260,7 @@
                              data-original="{{ game.cover_image | urlencode }}"
                              onerror="handleImageProxyError(this, decodeURIComponent(this.dataset.original), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
                              {% endif %}
-                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
+                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
                             <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
@@ -267,21 +285,21 @@
 
                     <div class="p-2.5 md:p-4 flex flex-col flex-grow justify-between gap-2 md:gap-4 bg-gradient-to-b from-transparent to-[#10121a]">
                         <div>
-                            <h3 class="font-bold text-xs md:text-base text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-1" title="{{ game.title }}">
+                            <h3 class="font-bold text-xs md:text-base xl:text-lg 2xl:text-xl text-gray-100 group-hover:text-cyan-300 lg:group-hover:tracking-wide transition-colors line-clamp-1" title="{{ game.title }}">
                                 {{ game.title }}
                             </h3>
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">{{ game.size or 'غير محدد' }}</span>
                             </p>
                             {% if game.region and game.region.strip() %}
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-earth-americas text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">{{ game.region }}</span>
                             </p>
                             {% endif %}
                             {% if game.game_code and game.game_code.strip() %}
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-barcode text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">{{ game.game_code }}</span>
                             </p>
@@ -314,7 +332,7 @@
          Desktop: centered pop-up (unchanged)
     ═══════════════════════════════════════════ -->
     <div id="gameModal" class="fixed inset-0 z-50 flex items-center md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
-        <div class="bg-[#14161d] border border-white/10 w-full max-w-2xl md:rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalBox">
+        <div class="bg-[#14161d] border border-white/10 w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl md:rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalBox">
             <div id="modalContent" class="p-6 md:p-6"></div>
         </div>
     </div>
@@ -486,7 +504,7 @@
                     : `onerror="this.src='${escapeHtml(fallbackImg)}'"`;
 
                 const card = `
-                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5">
+                <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5 lg:group-hover:shadow-[0_20px_60px_-15px_rgba(102,252,241,0.35)]">
 
                     <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
                         <img src="${escapeHtml(bannerPath)}" alt="${escapeHtml(game.console)} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
@@ -495,7 +513,7 @@
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
                         <img src="${escapeHtml(cover)}" alt="${escapeHtml(game.title)}"
                              ${proxyErrorAttr}
-                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
+                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
                             <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
@@ -520,20 +538,20 @@
 
                     <div class="p-2.5 md:p-4 flex flex-col flex-grow justify-between gap-2 md:gap-4 bg-gradient-to-b from-transparent to-[#10121a]">
                         <div>
-                            <h3 class="font-bold text-xs md:text-base text-gray-100 group-hover:text-cyan-300 transition-colors line-clamp-1" title="${escapeHtml(game.title)}">
+                            <h3 class="font-bold text-xs md:text-base xl:text-lg 2xl:text-xl text-gray-100 group-hover:text-cyan-300 lg:group-hover:tracking-wide transition-colors line-clamp-1" title="${escapeHtml(game.title)}">
                                 ${escapeHtml(game.title)}
                             </h3>
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 md:mt-1 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-hard-drive text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">${escapeHtml(game.size || 'غير محدد')}</span>
                             </p>
                             ${game.region && game.region.trim() ? `
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-earth-americas text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">${escapeHtml(game.region)}</span>
                             </p>` : ''}
                             ${game.game_code && game.game_code.trim() ? `
-                            <p class="text-[10px] md:text-xs text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
+                            <p class="text-[10px] md:text-xs xl:text-sm text-gray-400 mt-0.5 flex items-center gap-1 md:gap-2">
                                 <i class="fa-solid fa-barcode text-[9px] md:text-[10px] text-gray-500"></i>
                                 <span dir="ltr" class="inline-block">${escapeHtml(game.game_code)}</span>
                             </p>` : ''}
@@ -617,7 +635,7 @@
                     </div>
 
                     <div class="flex flex-col md:flex-row gap-4 md:gap-6">
-                        <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr} class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg">
+                        <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr} class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg lg:hover:scale-105 transition-transform duration-500">
 
                         <div class="flex-1 flex flex-col justify-between gap-3">
                             <div>
