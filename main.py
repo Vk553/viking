@@ -5,21 +5,24 @@ import math
 import time
 import re
 import json
+import logging
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional, List
-from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, field_validator
+from indexnow import submit_urls_to_indexnow
 
 # ==========================================
 # 1. الإعدادات العامة والثوابت
 # ==========================================
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
+INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_production")
 security_scheme = HTTPBearer()
 SITE_NAME = "VK Store"
 
@@ -124,6 +127,86 @@ def build_seo_meta(game: dict, base_url: str) -> dict:
     }
 
 
+def check_urls_not_recently_submitted(urls: list[str], cooldown_hours: int = 24) -> list[str]:
+    """
+    Returns the subset of `urls` that have NOT been successfully submitted to IndexNow 
+    within the cooldown window. Read-only — does not write to indexnow_log.
+    Never raises: on any DB error, returns the full input list unchanged so that a 
+    dedup-check failure never suppresses a legitimate submission.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        urls_to_submit = []
+        for url in urls:
+            cursor.execute("""
+                SELECT 1 FROM indexnow_log
+                WHERE url = %s
+                AND submitted_at > NOW() - (%s || ' hours')::interval
+            """, (url, cooldown_hours))
+            if cursor.fetchone() is None:
+                urls_to_submit.append(url)
+        return urls_to_submit
+    except Exception as e:
+        logging.getLogger("indexnow").warning(
+            f"Cooldown check failed, proceeding without dedup filtering: {e}"
+        )
+        return urls  # fail-open: never block a legitimate submission due to a DB hiccup
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def record_indexnow_submission(urls: list[str]) -> None:
+    """
+    Records URLs as submitted in indexnow_log. Call this ONLY after 
+    submit_urls_to_indexnow() has confirmed success. Never raises — any DB error here 
+    is logged and swallowed, since this is a best-effort dedup optimization, not a 
+    correctness requirement.
+    """
+    if not urls:
+        return
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        for url in urls:
+            cursor.execute("""
+                INSERT INTO indexnow_log (url, submitted_at)
+                VALUES (%s, NOW())
+                ON CONFLICT (url) DO UPDATE SET submitted_at = NOW()
+            """, (url,))
+        conn.commit()
+    except Exception as e:
+        logging.getLogger("indexnow").warning(f"Failed to record IndexNow log entry: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+async def submit_to_indexnow_safely(urls: list[str]) -> None:
+    """
+    Full IndexNow submission pipeline, designed to run inside a BackgroundTask.
+    Performs the cooldown check, the actual HTTP submission, and success-logging 
+    all in one place — none of this runs on the request thread. 
+    Guaranteed never to raise.
+    """
+    try:
+        filtered = check_urls_not_recently_submitted(urls)
+        if not filtered:
+            return
+        result = await submit_urls_to_indexnow(filtered)
+        if result.get("success"):
+            record_indexnow_submission(filtered)
+        # On failure: do nothing. The URLs remain NOT in indexnow_log (or their old 
+        # timestamp stands), so they stay eligible for retry on the next create/update 
+        # event or the next natural trigger. This satisfies "failed submissions remain 
+        # eligible for future retries."
+    except Exception as e:
+        logging.getLogger("indexnow").error(f"Unexpected error in IndexNow pipeline: {e}")
+
+
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -209,6 +292,23 @@ def init_db():
 
         if cursor.fetchone() is None:
             cursor.execute(f"ALTER TABLE games ADD COLUMN {col_name} {col_def}")
+
+    conn.commit()
+
+    # Create IndexNow log table for deduplication
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS indexnow_log (
+            id SERIAL PRIMARY KEY,
+            url TEXT NOT NULL UNIQUE,
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create index for efficient cooldown checks
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_indexnow_log_url_submitted 
+        ON indexnow_log (url, submitted_at)
+    """)
 
     conn.commit()
 
@@ -460,7 +560,7 @@ def get_game_by_id(id: int):
 
 
 @app.post("/api/games", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_token)])
-def create_game(game: GameCreate):
+def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Request):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -508,6 +608,11 @@ def create_game(game: GameCreate):
     created_game = cursor.fetchone()
     conn.close()
 
+    # Submit to IndexNow in background
+    base_url = str(request.base_url).rstrip("/")
+    url = f"{base_url}/game/{created_game['id']}-{created_game['slug']}"
+    background_tasks.add_task(submit_to_indexnow_safely, [url])
+
     return {
         "message": "تم إضافة اللعبة بنجاح",
         "data": created_game
@@ -515,15 +620,21 @@ def create_game(game: GameCreate):
 
 
 @app.put("/api/games/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(verify_token)])
-def update_game(id: int, game: GameUpdate):
+def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, request: Request):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM games WHERE id = %s", (id,))
+    cursor.execute("SELECT id, slug, title, description, cover_image FROM games WHERE id = %s", (id,))
     check_row = cursor.fetchone()
     if not check_row:
         conn.close()
         raise HTTPException(status_code=404, detail="اللعبة المراد تعديلها غير موجودة")
+
+    # Capture old values for comparison
+    old_slug = check_row['slug']
+    old_title = check_row['title']
+    old_description = check_row['description']
+    old_cover_image = check_row['cover_image']
 
     # Compute new slug from updated title and console
     new_slug = slugify(game.title, game.console)
@@ -560,6 +671,29 @@ def update_game(id: int, game: GameUpdate):
     updated_game = cursor.fetchone()
     conn.close()
 
+    # Submit to IndexNow in background if SEO-relevant fields changed
+    urls_to_submit = []
+    base_url = str(request.base_url).rstrip("/")
+
+    if old_slug != new_slug:
+        # Slug changed: submit both old and new URLs
+        old_url = f"{base_url}/game/{id}-{old_slug}"
+        new_url = f"{base_url}/game/{id}-{new_slug}"
+        urls_to_submit.extend([old_url, new_url])
+    else:
+        # Slug unchanged: check if title, description, or cover_image changed
+        seo_fields_changed = (
+            old_title != game.title or
+            old_description != game.description or
+            old_cover_image != game.cover_image
+        )
+        if seo_fields_changed:
+            url = f"{base_url}/game/{id}-{new_slug}"
+            urls_to_submit.append(url)
+
+    if urls_to_submit:
+        background_tasks.add_task(submit_to_indexnow_safely, urls_to_submit)
+
     return {
         "message": "تم تعديل بيانات اللعبة بنجاح",
         "data": updated_game
@@ -567,19 +701,27 @@ def update_game(id: int, game: GameUpdate):
 
 
 @app.delete("/api/games/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(verify_token)])
-def delete_game(id: int):
+def delete_game(id: int, background_tasks: BackgroundTasks, request: Request):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM games WHERE id = %s", (id,))
+    cursor.execute("SELECT id, slug FROM games WHERE id = %s", (id,))
     check_row = cursor.fetchone()
     if not check_row:
         conn.close()
         raise HTTPException(status_code=404, detail="اللعبة المراد حذفها غير موجودة")
 
+    # Capture slug before deletion
+    game_slug = check_row['slug']
+
     cursor.execute("DELETE FROM games WHERE id = %s", (id,))
     conn.commit()
     conn.close()
+
+    # Submit to IndexNow in background
+    base_url = str(request.base_url).rstrip("/")
+    url = f"{base_url}/game/{id}-{game_slug}"
+    background_tasks.add_task(submit_to_indexnow_safely, [url])
 
     return {"message": f"تم حذف اللعبة ذات الرقم التعريفي {id} بنجاح"}
 
@@ -744,6 +886,17 @@ Sitemap: {base_url}/sitemap.xml
         content=content,
         media_type="text/plain"
     )
+
+
+@app.get("/{key}.txt")
+def indexnow_key_verification(key: str):
+    """Serve IndexNow key verification file"""
+    if key == INDEXNOW_KEY:
+        return Response(
+            content=INDEXNOW_KEY,
+            media_type="text/plain"
+        )
+    raise HTTPException(status_code=404, detail="Key not found")
 
 
 # ==========================================
