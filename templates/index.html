@@ -7,6 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ seo_meta.title }}</title>
     <meta name="description" content="{{ seo_meta.description }}">
+    <meta property="og:site_name" content="Viking">
+    <meta property="og:title" content="Viking - متجر الألعاب">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <meta property="og:url" content="{{ seo_meta.canonical_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Viking - متجر الألعاب">
+    <meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
     <link rel="canonical" href="{{ seo_meta.canonical_url }}">
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
     <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
@@ -160,6 +168,27 @@
 </head>
 <body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-12">
 
+    <div id="telegramToast"
+         class="fixed top-0 left-0 right-0 z-[9999] -translate-y-full transition-transform duration-500 ease-out">
+      <div class="bg-cardBg/95 backdrop-blur-md border-b border-cyan-400/20 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <div class="flex items-center gap-2 text-sm text-subText">
+            <i class="fa-brands fa-telegram text-cyan-400 text-lg"></i>
+            <span>انضم إلى قناتنا على تيليجرام لمتابعة آخر التحديثات وحالة السيرفرات أولاً بأول</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="https://t.me/Vk_408" target="_blank" rel="noopener"
+               class="bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-black px-4 py-2 rounded-lg transition">
+              انضم الآن
+            </a>
+            <button onclick="dismissTelegramToast()" class="text-gray-400 hover:text-white w-7 h-7 flex items-center justify-center">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════
          HEADER
          Mobile: relative (scrolls away), compact logo
@@ -171,7 +200,7 @@
 
                 <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
-                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" id="site-brand-logo"
+                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="Viking" id="site-brand-logo"
                          class="h-10 sm:h-14 md:h-20 pointer-events-none select-none lg:hover:scale-105 transition-transform">
                 </div>
 
@@ -217,19 +246,19 @@
         </div>
     </header>
 
-    <!-- Hero Strip - Desktop Only -->
-    <section class="hidden lg:block relative overflow-hidden bg-gradient-to-r from-darkBg via-cardBg to-darkBg border-y border-white/5">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-            <div class="flex items-center justify-between">
+    <!-- Hero Strip -->
+    <section class="block relative overflow-hidden bg-gradient-to-r from-darkBg via-cardBg to-darkBg border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-8">
+            <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-2xl font-black text-white mb-2">
+                    <h2 class="text-lg sm:text-2xl font-black text-white mb-1 md:mb-2">
                         <span class="text-neonAccent">اكتشف</span> عالم الألعاب
                     </h2>
-                    <p class="text-subText text-sm">أحدث الألعاب لجميع الأجهزة بروابط مباشرة وسريعة</p>
+                    <p class="text-subText text-xs sm:text-sm">أحدث الألعاب لجميع الأجهزة بروابط مباشرة وسريعة</p>
                 </div>
-                <div class="text-right">
-                    <div class="text-3xl font-black text-neonAccent">1000+</div>
-                    <div class="text-subText text-xs mt-1">لعبة متوفرة</div>
+                <div class="text-right shrink-0">
+                    <div class="text-xl sm:text-3xl font-black text-neonAccent">1000+</div>
+                    <div class="text-subText text-[10px] sm:text-xs mt-1">لعبة متوفرة</div>
                 </div>
             </div>
         </div>
@@ -265,7 +294,7 @@
                              class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         {% if game.is_arabic == 1 %}
@@ -518,7 +547,7 @@
                              class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="VK Store Logo" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         ${game.is_arabic == 1 ? `
@@ -637,7 +666,17 @@
                     </div>
 
                     <div class="flex flex-col md:flex-row gap-4 md:gap-6">
-                        <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr} class="w-full md:w-48 h-52 md:h-64 object-cover rounded-2xl border border-white/10 shadow-lg lg:hover:scale-105 transition-transform duration-500">
+                        <div class="relative w-full md:w-48 h-52 md:h-64 rounded-2xl overflow-hidden border border-white/10 shadow-lg shrink-0 group">
+                            <!-- Blurred backdrop layer -->
+                            <img src="${escapeHtml(safeCover)}" aria-hidden="true"
+                                 class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 saturate-150"
+                                 onerror="this.style.display='none'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40"></div>
+
+                            <!-- Foreground: full, uncropped image -->
+                            <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr}
+                                 class="relative z-10 w-full h-full object-contain lg:group-hover:scale-105 transition-transform duration-500">
+                        </div>
 
                         <div class="flex-1 flex flex-col justify-between gap-3">
                             <div>
@@ -709,6 +748,43 @@
 
     <!-- Adsterra Social Bar -->
     <script src="https://pl30153598.effectivecpmnetwork.com/df/a3/36/dfa336b5b295cd476b2e7b2a85312b55.js"></script>
+
+    <script>
+    (function initTelegramToast() {
+      const STORAGE_KEY = 'telegramToastLastShown';
+      const COOLDOWN_MS = 48 * 60 * 60 * 1000; // 48 hours
+      const DISPLAY_MS = 10 * 1000; // 10 seconds
+
+      const toast = document.getElementById('telegramToast');
+      if (!toast) return;
+
+      const lastShown = localStorage.getItem(STORAGE_KEY);
+      const now = Date.now();
+
+      if (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN_MS) {
+        return; // still within cooldown, do not show
+      }
+
+      // Show it
+      requestAnimationFrame(() => {
+        toast.classList.remove('-translate-y-full');
+      });
+      localStorage.setItem(STORAGE_KEY, String(now));
+
+      const autoHideTimer = setTimeout(() => {
+        hideToast();
+      }, DISPLAY_MS);
+
+      window.dismissTelegramToast = function () {
+        clearTimeout(autoHideTimer);
+        hideToast();
+      };
+
+      function hideToast() {
+        toast.classList.add('-translate-y-full');
+      }
+    })();
+    </script>
 
 </body>
 </html>
