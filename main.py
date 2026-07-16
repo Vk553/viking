@@ -105,7 +105,7 @@ def build_seo_meta(game: dict, base_url: str) -> dict:
     Returns dict with title, description, h1, and canonical_url.
     """
     # Title template
-    title = f"{game['title']} {game['console'].upper()} PKG Download + Update + DLC | {SITE_NAME}"
+    title = f"{game['title']} {game['console'].upper()} Download + Update + DLC | {SITE_NAME}"
 
     # Description: keyword-rich but natural single sentence
     if game.get('description') and game['description'].strip():
@@ -114,7 +114,7 @@ def build_seo_meta(game: dict, base_url: str) -> dict:
         description = f"Download {game['title']} for {game['console'].upper()}. Includes update, DLC, fast download links, screenshots, and installation guide."
 
     # H1 template
-    h1 = f"{game['title']} {game['console'].upper()} PKG Download"
+    h1 = f"{game['title']} {game['console'].upper()} Download"
 
     # Canonical URL (full URL, not just path)
     canonical_url = f"{base_url}/game/{game['id']}-{game['slug']}"
