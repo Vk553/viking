@@ -309,7 +309,7 @@
     </header>
 
     <!-- ===== MAIN ===== -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 flex-grow w-full">
+    <main class="max-w-4xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 lg:mt-14 flex-grow w-full">
 
         <!-- Loading -->
         <div id="pageLoader" class="flex flex-col items-center justify-center py-32">
@@ -325,130 +325,135 @@
         </div>
 
         <!-- Game Content -->
-        <div id="gameContent" class="hidden space-y-6">
+        <div id="gameContent" class="hidden space-y-6 lg:grid lg:grid-cols-[380px_1fr] lg:gap-10 lg:items-start lg:space-y-0">
 
-            <!-- Game Card -->
-            <div class="bg-[#151821] border border-white/5 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
-                <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <!-- Main Content Column (Second Column) -->
+            <div class="lg:col-start-2 lg:order-2 space-y-6">
+                <!-- Game Card -->
+                <div class="bg-[#151821] lg:bg-gradient-to-br lg:from-[#1a1f2b]/90 lg:to-[#10131a]/90 lg:backdrop-blur-xl border border-white/5 lg:border-cyan-400/10 rounded-3xl p-6 lg:p-10 shadow-2xl lg:shadow-[0_0_60px_-15px_rgba(34,211,238,0.15)] relative overflow-hidden flex flex-col md:flex-row items-center lg:items-center gap-6 lg:gap-10">
+                    <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                <img id="gCover" src="" alt="" class="w-40 h-52 object-cover rounded-2xl shadow-lg border border-white/10 shrink-0 bg-gray-900">
+                    <img id="gCover" src="" alt="" class="w-40 h-52 lg:w-56 lg:h-72 object-cover rounded-2xl lg:rounded-3xl shadow-lg lg:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 shrink-0 bg-gray-900 lg:hover:scale-[1.03] transition-transform duration-500">
 
-                <div class="flex-1 text-center md:text-right z-10 w-full">
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                        <span id="gConsole" class="px-3 py-1 rounded-lg bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 font-black text-xs uppercase"></span>
-                        <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
-                    </div>
-
-                    <h1 id="gTitle" class="text-2xl sm:text-3xl font-black text-white mt-3 leading-tight">{{ seo_meta.h1 }}</h1>
-
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
-                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                            <span class="text-gray-500 block text-[10px]">الحجم</span>
-                            <span id="gSize" dir="ltr" class="font-bold text-cyan-400"></span>
+                    <div class="flex-1 text-center md:text-right z-10 w-full">
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                            <span id="gConsole" class="px-3 py-1 rounded-lg bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 font-black text-xs uppercase"></span>
+                            <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
                         </div>
-                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                            <span class="text-gray-500 block text-[10px]">الإصدار</span>
-                            <span id="gVersion" class="font-bold"></span>
-                        </div>
-                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                            <span class="text-gray-500 block text-[10px]">التحميلات</span>
-                            <span id="gDownloads" class="font-bold text-emerald-400"></span>
-                        </div>
-                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 hidden" id="gRegionBox">
-                            <span class="text-gray-500 block text-[10px]">المنطقة</span>
-                            <span id="gRegion" dir="ltr" class="font-bold"></span>
-                        </div>
-                        <div class="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 hidden" id="gGameCodeBox">
-                            <span class="text-gray-500 block text-[10px]">كود اللعبة</span>
-                            <span id="gGameCode" dir="ltr" class="font-bold"></span>
+
+                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-5xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
+
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
+                            <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
+                                <span class="text-gray-500 block text-[10px]">الحجم</span>
+                                <span id="gSize" dir="ltr" class="font-bold text-cyan-400"></span>
+                            </div>
+                            <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
+                                <span class="text-gray-500 block text-[10px]">الإصدار</span>
+                                <span id="gVersion" class="font-bold"></span>
+                            </div>
+                            <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
+                                <span class="text-gray-500 block text-[10px]">التحميلات</span>
+                                <span id="gDownloads" class="font-bold text-emerald-400"></span>
+                            </div>
+                            <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors hidden" id="gRegionBox">
+                                <span class="text-gray-500 block text-[10px]">المنطقة</span>
+                                <span id="gRegion" dir="ltr" class="font-bold"></span>
+                            </div>
+                            <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors hidden" id="gGameCodeBox">
+                                <span class="text-gray-500 block text-[10px]">كود اللعبة</span>
+                                <span id="gGameCode" dir="ltr" class="font-bold"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- ===== Archive Password Component (conditional rendering) ===== -->
-            <div id="archivePasswordBox" class="hidden bg-[#1a1e29]/80 backdrop-blur-md border border-cyan-500/20 rounded-2xl p-5 shadow-2xl">
-                <div class="flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-key text-cyan-400 text-xl"></i>
-                        <div class="flex flex-col">
-                            <span class="text-xs font-bold text-gray-400 mb-0.5">كلمة المرور لفك الضغط / Archive Password:</span>
-                            <span id="passwordValue" class="text-lg font-black text-cyan-300 tracking-wider" dir="ltr"></span>
+                <!-- ===== Archive Password Component (conditional rendering) ===== -->
+                <div id="archivePasswordBox" class="hidden bg-[#1a1e29]/80 lg:bg-gradient-to-r lg:from-[#1a1e29]/90 lg:to-[#151821]/90 backdrop-blur-md border border-cyan-500/20 lg:border-cyan-400/25 rounded-2xl lg:rounded-3xl p-5 lg:p-7 shadow-2xl lg:shadow-[0_0_35px_-10px_rgba(34,211,238,0.2)]">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-key text-cyan-400 text-xl"></i>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-gray-400 mb-0.5">كلمة المرور لفك الضغط / Archive Password:</span>
+                                <span id="passwordValue" class="text-lg font-black text-cyan-300 tracking-wider" dir="ltr"></span>
+                            </div>
                         </div>
+                        <button id="copyPasswordBtn" onclick="copyPassword()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-clipboard" id="copyIcon"></i>
+                            <span id="copyText">Copy</span>
+                        </button>
                     </div>
-                    <button id="copyPasswordBtn" onclick="copyPassword()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95">
-                        <i class="fa-solid fa-clipboard" id="copyIcon"></i>
-                        <span id="copyText">Copy</span>
-                    </button>
+                </div>
+
+                <!-- ===== TOP BANNER AD SLOT =====
+                     Placement: Above the download buttons grid.
+                     Recommended size: 728x90 (leaderboard, desktop) or 300x250 (mobile).
+                     Supported networks: HilltopAds Banner, Monetag Display, Google AdSense.
+                     HOW TO INSERT: Replace the inner comment block with your ad network <script> tag.
+                     The container enforces min-height and centers the ad unit automatically.
+                ===== -->
+                <div id="ad-slot-main-top" class="w-full bg-[#151821]/60 border border-dashed border-cyan-500/20 rounded-2xl p-4 my-6 lg:my-0 flex flex-col items-center justify-center min-h-[100px] overflow-hidden select-none">
+                    <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Advertisement</span>
+                    <script>
+                      atOptions = {
+                        'key' : 'ad813ce2fd67c6e72c1b3a84037acb7c',
+                        'format' : 'iframe',
+                        'height' : 90,
+                        'width' : 728,
+                        'params' : {}
+                      };
+                    </script>
+                    <script src="https://www.highperformanceformat.com/ad813ce2fd67c6e72c1b3a84037acb7c/invoke.js"></script>
+                </div>
+
+                <!-- ===== DOWNLOAD BUTTONS (rendered dynamically by renderDownloadButtons()) ===== -->
+                <div id="downloadBtnsGrid" class="pt-4 lg:pt-6">
+                    <!-- Buttons injected by JS -->
+                </div>
+
+                <!-- ===== BOTTOM NATIVE AD SLOT =====
+                     Placement: Below the download buttons grid.
+                     Purpose: Mimics a "You Might Also Like / Related Games" widget.
+                     Supported networks: MGID Native, Monetag Native, Outbrain.
+                     HOW TO INSERT: Replace the placeholder cards section below with your native ad script tag.
+                     The outer container and header label should remain intact.
+                ===== -->
+                <div id="ad-slot-main-bottom" class="w-full p-5 mt-8 lg:mt-0 min-h-[180px] overflow-hidden select-none">
+                    <!-- Header label — keep this in place even after inserting native ad tag -->
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">قد يعجبك أيضاً / You Might Also Like</span>
+                        <div class="flex-1 border-t border-white/5"></div>
+                        <span class="text-[9px] text-gray-600 uppercase tracking-wider">Sponsored</span>
+                    </div>
+                    <!-- ▼▼▼ INSERT NATIVE AD TAG HERE (MGID / Monetag Native / Outbrain) ▼▼▼ -->
+                    <!-- Live Adsterra Native Banner -->
+                    <script async="async" data-cfasync="false" src="https://pl30153604.effectivecpmnetwork.com/f772eec144fd5c9c302dfc2b6f74cfdc/invoke.js"></script>
+                    <div id="container-f772eec144fd5c9c302dfc2b6f74cfdc"></div>
+                    <!-- ▲▲▲ END NATIVE AD TAG ▲▲▲ -->
                 </div>
             </div>
 
-            <!-- ===== TOP BANNER AD SLOT =====
-                 Placement: Above the download buttons grid.
-                 Recommended size: 728x90 (leaderboard, desktop) or 300x250 (mobile).
-                 Supported networks: HilltopAds Banner, Monetag Display, Google AdSense.
-                 HOW TO INSERT: Replace the inner comment block with your ad network <script> tag.
-                 The container enforces min-height and centers the ad unit automatically.
-            ===== -->
-            <div id="ad-slot-main-top" class="w-full bg-[#151821]/60 border border-dashed border-cyan-500/20 rounded-2xl p-4 my-6 flex flex-col items-center justify-center min-h-[100px] overflow-hidden select-none">
-                <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Advertisement</span>
-                <script>
-                  atOptions = {
-                    'key' : 'ad813ce2fd67c6e72c1b3a84037acb7c',
-                    'format' : 'iframe',
-                    'height' : 90,
-                    'width' : 728,
-                    'params' : {}
-                  };
-                </script>
-                <script src="https://www.highperformanceformat.com/ad813ce2fd67c6e72c1b3a84037acb7c/invoke.js"></script>
-            </div>
-
-            <!-- ===== DOWNLOAD BUTTONS (rendered dynamically by renderDownloadButtons()) ===== -->
-            <div id="downloadBtnsGrid" class="pt-4">
-                <!-- Buttons injected by JS -->
-            </div>
-
-            <!-- ===== BOTTOM NATIVE AD SLOT =====
-                 Placement: Below the download buttons grid.
-                 Purpose: Mimics a "You Might Also Like / Related Games" widget.
-                 Supported networks: MGID Native, Monetag Native, Outbrain.
-                 HOW TO INSERT: Replace the placeholder cards section below with your native ad script tag.
-                 The outer container and header label should remain intact.
-            ===== -->
-            <div id="ad-slot-main-bottom" class="w-full p-5 mt-8 min-h-[180px] overflow-hidden select-none">
-                <!-- Header label — keep this in place even after inserting native ad tag -->
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">قد يعجبك أيضاً / You Might Also Like</span>
-                    <div class="flex-1 border-t border-white/5"></div>
-                    <span class="text-[9px] text-gray-600 uppercase tracking-wider">Sponsored</span>
-                </div>
-                <!-- ▼▼▼ INSERT NATIVE AD TAG HERE (MGID / Monetag Native / Outbrain) ▼▼▼ -->
-                <!-- Live Adsterra Native Banner -->
-                <script async="async" data-cfasync="false" src="https://pl30153604.effectivecpmnetwork.com/f772eec144fd5c9c302dfc2b6f74cfdc/invoke.js"></script>
-                <div id="container-f772eec144fd5c9c302dfc2b6f74cfdc"></div>
-                <!-- ▲▲▲ END NATIVE AD TAG ▲▲▲ -->
-            </div>
-
-            <!-- ===== Social Media Section ===== -->
-            <div class="bg-[#151821] border border-white/5 rounded-3xl p-8 shadow-2xl mt-12 text-center">
-                <h3 class="text-sm font-bold text-gray-400 mb-6 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-share-nodes text-cyan-400"></i>
-                    تابع حساباتنا / Follow Us
-                </h3>
-                <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-                    <a href="https://www.youtube.com/@vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                        <i class="fa-brands fa-youtube text-3xl text-red-500 group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">YouTube</span>
-                    </a>
-                    <a href="https://t.me/Vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                        <i class="fa-brands fa-telegram text-3xl text-[#229ED9] group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">Telegram</span>
-                    </a>
-                    <a href="https://discord.gg/DsvwpTgaj" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                        <i class="fa-brands fa-discord text-3xl text-[#5865F2] group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold text-gray-300 group-hover:text-white">Discord</span>
-                    </a>
+            <!-- ===== Social Media Section (Sidebar - First Column) ===== -->
+            <div class="lg:sticky lg:top-24 lg:self-start lg:order-1">
+                <div class="bg-[#151821] lg:bg-gradient-to-b lg:from-[#181c26] lg:to-[#101319] border border-white/5 lg:border-white/10 rounded-3xl p-8 lg:p-6 shadow-2xl mt-12 lg:mt-0 text-center">
+                    <h3 class="text-sm font-bold text-gray-400 mb-6 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-share-nodes text-cyan-400"></i>
+                        تابع حساباتنا / Follow Us
+                    </h3>
+                    <div class="grid grid-cols-3 lg:grid-cols-1 gap-4 lg:gap-3 max-w-lg mx-auto lg:max-w-none">
+                        <a href="https://www.youtube.com/@vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group lg:hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)] lg:hover:-translate-y-0.5">
+                            <i class="fa-brands fa-youtube text-3xl text-red-500 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-white">YouTube</span>
+                        </a>
+                        <a href="https://t.me/Vk_408" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group lg:hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)] lg:hover:-translate-y-0.5">
+                            <i class="fa-brands fa-telegram text-3xl text-[#229ED9] group-hover:scale-110 transition-transform"></i>
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-white">Telegram</span>
+                        </a>
+                        <a href="https://discord.gg/DsvwpTgaj" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group lg:hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)] lg:hover:-translate-y-0.5">
+                            <i class="fa-brands fa-discord text-3xl text-[#5865F2] group-hover:scale-110 transition-transform"></i>
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-white">Discord</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -831,7 +836,7 @@
                 if (def.type === 'primary') {
                     // ── PRIMARY: glowing cyan gradient, opens countdown modal ────────
                     const btn = document.createElement('button');
-                    btn.className = 'btn-primary-funnel';
+                    btn.className = 'btn-primary-funnel lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
 
                     const inner = document.createElement('div');
@@ -863,7 +868,7 @@
                 } else if (def.type === 'mirror') {
                     // ── MIRROR: clean trustworthy look, instant open + pop-under ─────
                     const btn = document.createElement('button');
-                    btn.className = 'btn-mirror-direct';
+                    btn.className = 'btn-mirror-direct lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
 
                     const icon = document.createElement('i');
@@ -908,7 +913,7 @@
                 } else {
                     // ── SECONDARY DARK: update / DLC / extras → countdown modal ───────
                     const btn = document.createElement('button');
-                    btn.className = 'btn-secondary-dark';
+                    btn.className = 'btn-secondary-dark lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
 
                     const icon = document.createElement('i');
