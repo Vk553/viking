@@ -24,7 +24,7 @@ from indexnow import submit_urls_to_indexnow
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_production")
 security_scheme = HTTPBearer()
-SITE_NAME = "Viking"
+SITE_NAME = "VK Store"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -99,13 +99,13 @@ def slugify(title: str, console: str) -> str:
     return slug
 
 
-def build_seo_meta(game: dict, base_url: str) -> dict:
+def build_seo_meta(game: dict, base_url: str, path_prefix: str = "game") -> dict:
     """
     Generate SEO metadata for a game page.
     Returns dict with title, description, h1, and canonical_url.
     """
     # Title template
-    title = f"{game['title']} {game['console'].upper()} Download + Update + DLC | {SITE_NAME}"
+    title = f"{game['title']} {game['console'].upper()} PKG Download + Update + DLC | {SITE_NAME}"
 
     # Description: keyword-rich but natural single sentence
     if game.get('description') and game['description'].strip():
@@ -114,10 +114,10 @@ def build_seo_meta(game: dict, base_url: str) -> dict:
         description = f"Download {game['title']} for {game['console'].upper()}. Includes update, DLC, fast download links, screenshots, and installation guide."
 
     # H1 template
-    h1 = f"{game['title']} {game['console'].upper()} Download"
+    h1 = f"{game['title']} {game['console'].upper()}  Download"
 
     # Canonical URL (full URL, not just path)
-    canonical_url = f"{base_url}/game/{game['id']}-{game['slug']}"
+    canonical_url = f"{base_url}/{path_prefix}/{game['id']}-{game['slug']}"
 
     return {
         "title": title,
@@ -749,6 +749,56 @@ def redirect_download_page(id: Optional[int] = Query(None)):
 
     # 301 redirect to new SEO-friendly URL
     return RedirectResponse(url=f"/game/{game['id']}-{game['slug']}", status_code=301)
+
+
+@app.get("/information/{id_slug}")
+def information_page(id_slug: str, request: Request):
+    """Render the game information/detail page (step before download)"""
+    # Parse the leading integer ID from the path (before the first hyphen)
+    parts = id_slug.split('-')
+    if not parts or not parts[0].isdigit():
+        raise HTTPException(status_code=404, detail="Invalid game URL")
+
+    game_id = int(parts[0])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM games WHERE id = %s", (game_id,))
+    game = cursor.fetchone()
+    conn.close()
+
+    if not game:
+        raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
+
+    # Build SEO metadata
+    base_url = str(request.base_url).rstrip("/")
+    seo_meta = build_seo_meta(game, base_url, path_prefix="information")
+
+    # Build JSON-LD structured data
+    json_ld_data = {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": game['title'],
+        "operatingSystem": game['console'].upper(),
+        "gamePlatform": game['console'].upper(),
+        "description": seo_meta['description'],
+        "image": game['cover_image'] or ""
+    }
+    json_ld_json = json.dumps(json_ld_data, default=str).replace('<', '\\u003c')
+
+    # Convert game dict to JSON for inline embedding
+    game_json = json.dumps(game, default=str).replace('<', '\\u003c')
+
+    return templates.TemplateResponse(
+        request=request,
+        name="information_game.html",
+        context={
+            "seo_meta": seo_meta,
+            "game": game,
+            "game_json": game_json,
+            "json_ld_json": json_ld_json
+        }
+    )
 
 
 @app.get("/game/{id_slug}")
