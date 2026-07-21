@@ -300,10 +300,22 @@
                 <div class="flex items-center gap-3 group">
                     <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
                 </div>
-                <a href="/" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 border border-white/5 transition flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-right"></i>
-                    <span>العودة للصفحة الرئيسية</span>
-                </a>
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Button 1: Return to Game Details -->
+                    <a id="backToInfoBtn"
+                       href="{% if game %}/information/{{ game.id }}-{{ game.slug }}{% else %}/{% endif %}"
+                       class="px-3.5 py-2 rounded-xl bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 transition flex items-center gap-1.5 text-xs font-bold shadow-[0_0_15px_rgba(34,211,238,0.15)]">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>تفاصيل اللعبة</span>
+                    </a>
+
+                    <!-- Button 2: Return to Home -->
+                    <a href="/"
+                       class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 border border-white/10 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-house"></i>
+                        <span>الرئيسية</span>
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -341,7 +353,7 @@
                             <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
                         </div>
 
-                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-3xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
+                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-5xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
 
                         <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
                             <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
@@ -676,11 +688,18 @@
             document.getElementById('pageLoader').classList.add('hidden');
             document.getElementById('gameContent').classList.remove('hidden');
 
+            // Dynamically set backToInfoBtn link if loaded via API
+            const backToInfoBtn = document.getElementById('backToInfoBtn');
+            if (backToInfoBtn && game && game.id) {
+                const slug = game.slug || '';
+                backToInfoBtn.href = `/information/${game.id}${slug ? '-' + slug : ''}`;
+            }
+
             // Only overwrite H1 if data came from API fallback (not SSR)
             // When SSR, H1 already contains the correct server-rendered value
             if (!isServerRendered) {
                 // Compute h1-style string matching build_seo_meta() template in main.py
-                const h1Text = `${game.title} ${game.console.toUpperCase()} Download`;
+                const h1Text = `${game.title} ${game.console.toUpperCase()} PKG Download`;
                 document.getElementById('gTitle').textContent = h1Text;
             }
 
