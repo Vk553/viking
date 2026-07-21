@@ -84,24 +84,6 @@
                 white-space: nowrap;
             }
 
-            /* Modal: full-width bottom-sheet on mobile */
-            #gameModal {
-                align-items: flex-end;
-                padding: 0;
-            }
-            #modalBox {
-                border-radius: 24px 24px 0 0;
-                max-width: 100%;
-                width: 100%;
-                max-height: 92dvh;
-                overflow-y: auto;
-                /* subtle neon top glow */
-                box-shadow: 0 -4px 40px rgba(102, 252, 241, 0.08), 0 0 0 1px rgba(102,252,241,0.1);
-            }
-            #modalContent {
-                padding: 20px 16px 32px;
-            }
-
             /* Game card grid: tighter on mobile */
             #gamesGrid {
                 gap: 12px;
@@ -174,12 +156,16 @@
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <div class="flex items-center gap-2 text-sm text-subText">
             <i class="fa-brands fa-telegram text-cyan-400 text-lg"></i>
-            <span>انضم إلى قناتنا على تيليجرام لمتابعة آخر التحديثات وحالة الموقع أولاً بأول</span>
+            <span>انضم إلى قناتنا على تيليجرام لمتابعة آخر التحديثات وحالة السيرفرات أولاً بأول</span>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <a href="https://t.me/Vk_408" target="_blank" rel="noopener"
                class="bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-black px-4 py-2 rounded-lg transition">
               انضم الآن
+            </a>
+            <a href="https://t.me/Vk_408_backup" target="_blank" rel="noopener"
+               class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition border border-white/10">
+              القناة الاحتياطية
             </a>
             <button onclick="dismissTelegramToast()" class="text-gray-400 hover:text-white w-7 h-7 flex items-center justify-center">
               <i class="fa-solid fa-xmark"></i>
@@ -252,7 +238,7 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg sm:text-2xl font-black text-white mb-1 md:mb-2">
-                        <span class="text-neonAccent">أكتشف</span> عالم الألعاب
+                        <span class="text-neonAccent">اكتشف</span> عالم الألعاب
                     </h2>
                     <p class="text-subText text-xs sm:text-sm">أحدث الألعاب لجميع الأجهزة بروابط مباشرة وسريعة</p>
                 </div>
@@ -337,11 +323,11 @@
                             {% endif %}
                         </div>
 
-                        <button onclick="openGameModal({{ game.id }})"
+                        <a href="/information/{{ game.id }}-{{ game.slug | default('game') }}"
                             class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
                             <span>التفاصيل</span>
                             <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
-                        </button>
+                        </a>
                     </div>
                 </div>
                 {% endfor %}
@@ -356,17 +342,6 @@
         <div id="emptyState" class="hidden text-center py-24 bg-white/[0.02] rounded-3xl border border-dashed border-white/10 mt-6"></div>
 
     </main>
-
-    <!-- ═══════════════════════════════════════════
-         GAME DETAIL MODAL
-         Mobile: bottom-sheet with drag handle + sticky close
-         Desktop: centered pop-up (unchanged)
-    ═══════════════════════════════════════════ -->
-    <div id="gameModal" class="fixed inset-0 z-50 flex items-center md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
-        <div class="bg-[#14161d] border border-white/10 w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl md:rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalBox">
-            <div id="modalContent" class="p-6 md:p-6"></div>
-        </div>
-    </div>
 
     <script>
         const API_BASE_URL = "{{ request.base_url }}api/games";
@@ -588,11 +563,11 @@
                             </p>` : ''}
                         </div>
 
-                        <button onclick="openGameModal(${Number(game.id) || 0})"
+                        <a href="/information/${Number(game.id) || 0}-${game.slug ? escapeHtml(game.slug) : 'game'}"
                             class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
                             <span>التفاصيل</span>
                             <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
-                        </button>
+                        </a>
                     </div>
 
                 </div>
@@ -636,92 +611,6 @@
             }, 400);
         });
 
-        async function openGameModal(gameId) {
-            const modal = document.getElementById('gameModal');
-            const modalBox = document.getElementById('modalBox');
-            const content = document.getElementById('modalContent');
-
-            modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); modalBox.classList.remove('scale-95'); }, 10);
-
-            // Mobile: show compact loader, desktop: centered loader
-            content.innerHTML = `<div class="py-16 text-center"><div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto"></div></div>`;
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/${gameId}`);
-                const g = await res.json();
-
-                // SECURITY: Apply URL validation to cover_image and youtube_link
-                const safeCover = isSafeUrl(g.cover_image) ? getProxiedImageUrl(g.cover_image) : 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
-                const safeYoutube = isSafeUrl(g.youtube_link) ? g.youtube_link : null;
-                const modalFallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&w=400';
-                const modalProxyErrorAttr = (g.cover_image && g.cover_image.includes('steamgriddb.com'))
-                    ? `onerror="handleImageProxyError(this, '${encodeURIComponent(g.cover_image)}', '${modalFallback}')"`
-                    : `onerror="this.src='${modalFallback}'"`;
-
-                content.innerHTML = `
-                    <div class="modal-sticky-close flex justify-between items-center md:hidden">
-                        <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">${escapeHtml(g.console === 'XBOX' ? 'XBOX 360' : g.console)}</span>
-                        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-gray-300 hover:bg-white/20 hover:text-white transition-all text-sm"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-
-                    <div class="flex flex-col md:flex-row gap-4 md:gap-6">
-                        <div class="relative w-full md:w-48 h-52 md:h-64 rounded-2xl overflow-hidden border border-white/10 shadow-lg shrink-0 group">
-                            <!-- Blurred backdrop layer -->
-                            <img src="${escapeHtml(safeCover)}" aria-hidden="true"
-                                 class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 saturate-150"
-                                 onerror="this.style.display='none'">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40"></div>
-
-                            <!-- Foreground: full, uncropped image -->
-                            <img src="${escapeHtml(safeCover)}" ${modalProxyErrorAttr}
-                                 class="relative z-10 w-full h-full object-contain lg:group-hover:scale-105 transition-transform duration-500">
-                        </div>
-
-                        <div class="flex-1 flex flex-col justify-between gap-3">
-                            <div>
-                                <div class="hidden md:flex justify-between items-start">
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">${escapeHtml(g.console === 'XBOX' ? 'XBOX 360' : g.console)}</span>
-                                    <button onclick="closeModal()" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
-                                </div>
-                                <h2 class="text-lg md:text-xl font-black mt-1 md:mt-2 text-white">${escapeHtml(g.title)}</h2>
-                                <p class="text-xs text-gray-400 mt-2 leading-relaxed max-h-20 md:max-h-24 overflow-y-auto pr-1">${escapeHtml(g.description || 'لا يوجد وصف متاح لهذه اللعبة.')}</p>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2 bg-white/[0.03] p-3 rounded-xl border border-white/5 text-xs">
-                                <div><span class="text-gray-500 block">الحجم:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.size || '--')}</span></div>
-                                <div><span class="text-gray-500 block">الإصدار:</span> <span class="font-bold text-gray-200">${escapeHtml(g.version || '--')}</span></div>
-                                ${g.region && g.region.trim() ? `<div><span class="text-gray-500 block">المنطقة:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.region)}</span></div>` : ''}
-                                ${g.game_code && g.game_code.trim() ? `<div><span class="text-gray-500 block">كود اللعبة:</span> <span dir="ltr" class="font-bold text-gray-200 inline-block">${escapeHtml(g.game_code)}</span></div>` : ''}
-                            </div>
-
-                            <div class="flex flex-col gap-2 pt-3 md:pt-4 border-t border-white/5">
-                                <a href="/game/${Number(g.id) || 0}-${escapeHtml(g.slug || 'game')}" class="w-full bg-cyan-400 hover:bg-cyan-300 text-black text-center py-3 rounded-xl text-sm font-black shadow-[0_0_15px_rgba(102,252,241,0.3)] transition">الانتقال لصفحة التحميل</a>
-
-                                <div class="flex gap-2">
-                                    ${safeYoutube ? `<a href="${escapeHtml(safeYoutube)}" target="_blank" class="flex-1 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 text-center py-2 rounded-xl text-xs font-bold transition"><i class="fa-brands fa-youtube ml-1"></i> عرض التريلر</a>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } catch (err) {
-                content.innerHTML = `<p class="text-center text-red-400 py-8">حدث خطأ أثناء جلب التفاصيل</p>`;
-            }
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('gameModal');
-            const modalBox = document.getElementById('modalBox');
-            modal.classList.add('opacity-0');
-            modalBox.classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        document.getElementById('gameModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('gameModal')) closeModal();
-        });
-
         function initInfiniteScroll() {
             const observer = new IntersectionObserver(async (entries) => {
                 if (!entries[0].isIntersecting) return;
@@ -753,7 +642,7 @@
     (function initTelegramToast() {
       const STORAGE_KEY = 'telegramToastLastShown';
       const COOLDOWN_MS = 48 * 60 * 60 * 1000; // 48 hours
-      const DISPLAY_MS = 50 * 1000; // 10 seconds
+      const DISPLAY_MS = 10 * 1000; // 10 seconds
 
       const toast = document.getElementById('telegramToast');
       if (!toast) return;
