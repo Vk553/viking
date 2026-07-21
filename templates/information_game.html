@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="Tz-VhZb6XeFfdcKPOjvM0CsDO2ZXkzOerJyBSbPBSF0" />
+    <meta name="msvalidate.01" content="532532DFDE01B2CA9521FFAD32C22612" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_meta.title }}</title>
+    <meta name="description" content="{{ seo_meta.description }}">
+    <link rel="canonical" href="{{ seo_meta.canonical_url }}">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="{{ seo_meta.title }}">
+    <meta property="og:description" content="{{ seo_meta.description }}">
+    <meta property="og:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+    <meta property="og:type" content="video.game">
+    <meta property="og:url" content="{{ seo_meta.canonical_url }}">
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_meta.title }}">
+    <meta name="twitter:description" content="{{ seo_meta.description }}">
+    <meta name="twitter:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">{{ json_ld_json | safe }}</script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 'cairo': ['Cairo', 'sans-serif'] },
+                    colors: {
+                        darkBg:     '#0b0c10',
+                        cardBg:     '#1f2833',
+                        neonAccent: '#66fcf1',
+                        subText:    '#c5c6c7'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0b0c10; color: #ffffff; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0c10; }
+        ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
+        ::-webkit-scrollbar-thumb:hover { background: #66fcf1; }
+    </style>
+    <script src="https://pl30469867.effectivecpmnetwork.com/47/33/58/473358fa1c34708a1da1281556d6e1ab.js"></script>
+</head>
+<body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-16 flex flex-col">
+
+    <!-- ===== HEADER ===== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 group">
+                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
+                </div>
+                <a href="/" class="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold border border-cyan-400 transition flex items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)]">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>العودة للرئيسية</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MAIN ===== -->
+    <main class="max-w-4xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 lg:mt-14 flex-grow w-full">
+
+        <!-- Loading -->
+        <div id="pageLoader" class="flex flex-col items-center justify-center py-32">
+            <div class="w-12 h-12 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin"></div>
+            <p class="mt-4 text-sm text-gray-400 animate-pulse">جاري جلب تفاصيل اللعبة...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="errorBox" class="hidden text-center py-20 bg-[#151821] rounded-3xl border border-red-500/20 p-8">
+            <i class="fa-solid fa-circle-exclamation text-5xl text-red-400 mb-4"></i>
+            <h2 id="errorText" class="text-xl font-bold text-white">حدث خطأ ما</h2>
+            <a href="/" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition">الرئيسية</a>
+        </div>
+
+        <!-- Game Content -->
+        {% if game %}
+        <div id="gameContent" class="space-y-6">
+
+            <!-- Hero / Info Card -->
+            <div class="bg-gradient-to-br from-[#1a1f2b]/90 to-[#10131a]/90 backdrop-blur-xl border border-cyan-400/10 rounded-3xl p-6 lg:p-10 shadow-[0_0_60px_-15px_rgba(34,211,238,0.15)] relative overflow-hidden">
+                <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                    <!-- Cover Image with Blurred Backdrop -->
+                    <div class="relative w-full lg:w-64 h-80 lg:h-96 shrink-0">
+                        <!-- Blurred backdrop layer -->
+                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                             aria-hidden="true"
+                             class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 saturate-150 rounded-3xl"
+                             onerror="this.style.display='none'">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40 rounded-3xl"></div>
+
+                        <!-- Foreground: full, uncropped image -->
+                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                             alt="{{ game.title }}"
+                             class="relative z-10 w-full h-full object-contain rounded-3xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 bg-gray-900">
+                    </div>
+
+                    <!-- Game Info -->
+                    <div class="flex-1 text-center lg:text-right z-10 w-full">
+                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-4">
+                            <span class="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-black text-xs uppercase">{{ game.console }}</span>
+                        </div>
+
+                        <h1 class="text-2xl sm:text-3xl lg:text-5xl font-black text-white leading-tight lg:tracking-tight">{{ game.title }}</h1>
+
+                        <!-- Full Description -->
+                        <p class="text-sm md:text-base text-gray-300 mt-4 lg:mt-6 leading-relaxed">{{ game.description or 'لا يوجد وصف متاح لهذه اللعبة.' }}</p>
+
+                        <!-- Stats/Specs Grid -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 lg:mt-8">
+                            {% if game.size and game.size.strip() %}
+                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                                <span class="text-gray-500 block text-[10px]">الحجم</span>
+                                <span dir="ltr" class="font-bold text-cyan-400">{{ game.size }}</span>
+                            </div>
+                            {% endif %}
+                            {% if game.version and game.version.strip() %}
+                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                                <span class="text-gray-500 block text-[10px]">الإصدار</span>
+                                <span dir="ltr" class="font-bold text-gray-200">{{ game.version }}</span>
+                            </div>
+                            {% endif %}
+                            {% if game.game_code and game.game_code.strip() %}
+                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                                <span class="text-gray-500 block text-[10px]">كود اللعبة</span>
+                                <span dir="ltr" class="font-bold text-gray-200">{{ game.game_code }}</span>
+                            </div>
+                            {% endif %}
+                            {% if game.region and game.region.strip() %}
+                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                                <span class="text-gray-500 block text-[10px]">المنطقة</span>
+                                <span dir="ltr" class="font-bold text-gray-200">{{ game.region }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Native Banner -->
+            <div class="flex justify-center w-full my-8">
+                <script async="async" data-cfasync="false" src="https://pl30153604.effectivecpmnetwork.com/f772eec144fd5c9c302dfc2b6f74cfdc/invoke.js"></script>
+                <div id="container-f772eec144fd5c9c302dfc2b6f74cfdc"></div>
+            </div>
+
+            <!-- Call to Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 mt-8 lg:mt-10">
+                <a href="/game/{{ game.id }}-{{ game.slug }}"
+                   class="flex-1 group relative overflow-hidden bg-cyan-400 hover:bg-cyan-300 text-black flex items-center justify-center py-4 lg:py-5 px-8 lg:px-12 rounded-2xl text-base lg:text-lg font-black shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] hover:shadow-[0_0_40px_-5px_rgba(34,211,238,0.6)] transition-all duration-300 hover:scale-105 active:scale-95"
+                   onclick="window.open('https://www.effectivecpmnetwork.com/eui5ufii?key=047fea461aa7fd86cbf52fc633357035', '_blank');">
+                    <span class="relative z-10 flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-download"></i>
+                        <span>الانتقال لصفحة التحميل</span>
+                    </span>
+                </a>
+                {% if game.youtube_link %}
+                <a href="{{ game.youtube_link }}" target="_blank" rel="noopener noreferrer" class="flex-1 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 flex items-center justify-center py-4 lg:py-5 rounded-2xl text-base lg:text-lg font-bold transition duration-300">
+                    <i class="fa-brands fa-youtube ml-2 text-lg"></i>
+                    عرض التريلر
+                </a>
+                {% endif %}
+            </div>
+
+        </div>
+        {% else %}
+        <div id="errorBox" class="text-center py-20 bg-[#151821] rounded-3xl border border-red-500/20 p-8">
+            <i class="fa-solid fa-circle-exclamation text-5xl text-red-400 mb-4"></i>
+            <h2 id="errorText" class="text-xl font-bold text-white">اللعبة غير موجودة</h2>
+            <a href="/" class="inline-block mt-6 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition">الرئيسية</a>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="mt-16 border-t border-white/5 py-6 text-center text-xs text-gray-500">
+        جميع الحقوق محفوظة © Viking 2026
+    </footer>
+
+    <script>
+        // Hide loader on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('pageLoader');
+            const content = document.getElementById('gameContent');
+            if (loader) loader.classList.add('hidden');
+            if (content) content.classList.remove('hidden');
+        });
+    </script>
+    <script src="https://pl30153598.effectivecpmnetwork.com/df/a3/36/dfa336b5b295cd476b2e7b2a85312b55.js"></script>
+
+</body>
+</html>
