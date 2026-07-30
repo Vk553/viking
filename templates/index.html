@@ -388,8 +388,8 @@
         }
 
         const IMAGE_PROXY_CHAIN = [
+            (url) => `https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
             (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
-            (url) => `https://vk-image-proxy.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
             (url) => url
         ];
 
