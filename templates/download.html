@@ -15,7 +15,7 @@
     <!-- Open Graph Tags -->
     <meta property="og:title" content="{{ seo_meta.title }}">
     <meta property="og:description" content="{{ seo_meta.description }}">
-    <meta property="og:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+    <meta property="og:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
     <meta property="og:type" content="video.game">
     <meta property="og:url" content="{{ seo_meta.canonical_url }}">
 
@@ -23,7 +23,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ seo_meta.title }}">
     <meta name="twitter:description" content="{{ seo_meta.description }}">
-    <meta name="twitter:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+    <meta name="twitter:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
 
     <!-- Schema.org Structured Data -->
     <script type="application/ld+json">{{ json_ld_json | safe }}</script>
@@ -345,7 +345,8 @@
                 <div class="bg-[#151821] lg:bg-gradient-to-br lg:from-[#1a1f2b]/90 lg:to-[#10131a]/90 lg:backdrop-blur-xl border border-white/5 lg:border-cyan-400/10 rounded-3xl p-6 lg:p-10 shadow-2xl lg:shadow-[0_0_60px_-15px_rgba(34,211,238,0.15)] relative overflow-hidden flex flex-col md:flex-row items-center lg:items-center gap-6 lg:gap-10">
                     <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                    <img id="gCover" src="" alt="" class="w-40 h-52 lg:w-56 lg:h-72 object-cover rounded-2xl lg:rounded-3xl shadow-lg lg:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 shrink-0 bg-gray-900 lg:hover:scale-[1.03] transition-transform duration-500">
+                    <img id="gCover" src="" alt="" class="w-40 h-52 lg:w-56 lg:h-72 object-cover rounded-2xl lg:rounded-3xl shadow-lg lg:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 shrink-0 bg-gray-900 lg:hover:scale-[1.03] transition-transform duration-500"
+                         loading="lazy">
 
                     <div class="flex-1 text-center md:text-right z-10 w-full">
                         <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
@@ -353,7 +354,7 @@
                             <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
                         </div>
 
-                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-2xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
+                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-5xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
 
                         <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
                             <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
@@ -720,8 +721,8 @@
             }
 
             const IMAGE_PROXY_CHAIN = [
+                (url) => `https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
                 (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
-                (url) => `https://vk-image-proxy.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
                 (url) => url
             ];
 
