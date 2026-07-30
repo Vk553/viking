@@ -271,13 +271,14 @@
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
-                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://external-content.duckduckgo.com/iu/?u={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              alt="{{ game.title }}"
                              {% if game.cover_image and 'steamgriddb.com' in game.cover_image %}
                              data-original="{{ game.cover_image | urlencode }}"
                              onerror="handleImageProxyError(this, decodeURIComponent(this.dataset.original), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
                              {% endif %}
-                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
+                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out"
+                             loading="lazy">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
                             <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
@@ -519,7 +520,8 @@
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
                         <img src="${escapeHtml(cover)}" alt="${escapeHtml(game.title)}"
                              ${proxyErrorAttr}
-                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out">
+                             class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out"
+                             loading="lazy">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
                             <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
