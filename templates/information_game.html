@@ -15,7 +15,7 @@
     <!-- Open Graph Tags -->
     <meta property="og:title" content="{{ seo_meta.title }}">
     <meta property="og:description" content="{{ seo_meta.description }}">
-    <meta property="og:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+    <meta property="og:image" content="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
     <meta property="og:type" content="video.game">
     <meta property="og:url" content="{{ seo_meta.canonical_url }}">
 
@@ -23,7 +23,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ seo_meta.title }}">
     <meta name="twitter:description" content="{{ seo_meta.description }}">
-    <meta name="twitter:image" content="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
+    <meta name="twitter:image" content="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% else %}{{ game.cover_image }}{% endif %}">
 
     <!-- Schema.org Structured Data -->
     <script type="application/ld+json">{{ json_ld_json | safe }}</script>
@@ -105,7 +105,7 @@
                     <!-- Cover Image with Blurred Backdrop -->
                     <div class="relative w-full lg:w-64 h-80 lg:h-96 shrink-0">
                         <!-- Blurred backdrop layer -->
-                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                        <img src="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              aria-hidden="true"
                              class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 saturate-150 rounded-3xl"
                              onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80'; this.style.display=''"
@@ -113,7 +113,7 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40 rounded-3xl"></div>
 
                         <!-- Foreground: full, uncropped image -->
-                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                        <img src="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              alt="{{ game.title }}"
                              class="relative z-10 w-full h-full object-contain rounded-3xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 bg-gray-900"
                              loading="lazy"
@@ -126,7 +126,7 @@
                             <span class="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-black text-xs uppercase">{{ game.console }}</span>
                         </div>
 
-                        <h1 class="text-2xl sm:text-3xl lg:text-2xl font-black text-white leading-tight lg:tracking-tight">{{ game.title }}</h1>
+                        <h1 class="text-2xl sm:text-3xl lg:text-5xl font-black text-white leading-tight lg:tracking-tight">{{ game.title }}</h1>
 
                         <!-- Full Description -->
                         <p class="text-sm md:text-base text-gray-300 mt-4 lg:mt-6 leading-relaxed">{{ game.description or 'لا يوجد وصف متاح لهذه اللعبة.' }}</p>
