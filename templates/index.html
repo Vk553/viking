@@ -271,9 +271,9 @@
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
-                        <img src="{% if game.cover_image and 'steamgriddb.com' in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
+                        <img src="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              alt="{{ game.title }}"
-                             {% if game.cover_image and 'steamgriddb.com' in game.cover_image %}
+                             {% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}
                              data-original="{{ game.cover_image | urlencode }}"
                              onerror="handleImageProxyError(this, decodeURIComponent(this.dataset.original), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
                              {% endif %}
@@ -396,7 +396,7 @@
 
         function getProxiedImageUrl(url) {
             if (!url || typeof url !== 'string') return url;
-            if (!url.includes('steamgriddb.com')) return url;
+            if (url.includes('cdn.jsdelivr.net')) return url;
             return IMAGE_PROXY_CHAIN[0](url);
         }
 
@@ -506,7 +506,7 @@
                 // SECURITY: Apply URL validation to cover_image
                 const cover = isSafeUrl(game.cover_image) ? getProxiedImageUrl(game.cover_image) : fallbackImg;
                 const bannerPath = getConsoleBanner(game.console);
-                const proxyErrorAttr = (game.cover_image && game.cover_image.includes('steamgriddb.com'))
+                const proxyErrorAttr = (game.cover_image && !game.cover_image.includes('cdn.jsdelivr.net'))
                     ? `onerror="handleImageProxyError(this, '${encodeURIComponent(game.cover_image)}', '${fallbackImg}')"`
                     : `onerror="this.src='${escapeHtml(fallbackImg)}'"`;
 
