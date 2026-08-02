@@ -1,6 +1,8 @@
 import psycopg2
 import psycopg2.extras
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import math
 import time
 import re
@@ -12,6 +14,7 @@ from datetime import datetime
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -371,6 +374,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 
 # ==========================================
 # 3. نماذج البيانات (Pydantic Models)
@@ -525,7 +530,7 @@ def get_games(
     total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
     offset = (page - 1) * limit
-    data_query = f"SELECT * {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
+    data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
     data_params = params + [limit, offset]
 
     cursor.execute(data_query, data_params)
@@ -797,7 +802,8 @@ def information_page(id_slug: str, request: Request):
             "game": game,
             "game_json": game_json,
             "json_ld_json": json_ld_json
-        }
+        },
+        headers={"Cache-Control": "public, max-age=1800"}
     )
 
 
@@ -837,7 +843,9 @@ def game_page(id_slug: str, request: Request):
     json_ld_json = json.dumps(json_ld_data, default=str).replace('<', '\\u003c')
 
     # Convert game dict to JSON for inline embedding
-    game_json = json.dumps(game, default=str).replace('<', '\\u003c')
+    game_dict_for_embed = dict(game)
+    game_dict_for_embed.pop('description', None)
+    game_json = json.dumps(game_dict_for_embed, default=str).replace('<', '\\u003c')
 
     return templates.TemplateResponse(
         request=request,
@@ -847,7 +855,8 @@ def game_page(id_slug: str, request: Request):
             "game": game,
             "game_json": game_json,
             "json_ld_json": json_ld_json
-        }
+        },
+        headers={"Cache-Control": "public, max-age=600"}
     )
 
 
@@ -877,7 +886,8 @@ def index_page(request: Request):
         context={
             "seo_meta": seo_meta,
             "games": games
-        }
+        },
+        headers={"Cache-Control": "public, max-age=300"}
     )
 
 
