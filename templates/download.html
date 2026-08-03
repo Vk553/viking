@@ -562,6 +562,7 @@
 
 
     <!-- ===== SCRIPTS ===== -->
+    {% include "partials/_image_proxy.html" %}
     <script type="application/json" id="__INITIAL_GAME__">{{ game_json | safe }}</script>
     <script>
         // ─── CONFIG ───────────────────────────────────────────────────────────────
@@ -718,29 +719,6 @@
             if (game.game_code && game.game_code.trim()) {
                 document.getElementById('gGameCode').textContent = game.game_code;
                 document.getElementById('gGameCodeBox').classList.remove('hidden');
-            }
-
-            const IMAGE_PROXY_CHAIN = [
-                (url) => `https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
-                (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
-                (url) => url
-            ];
-
-            function getProxiedImageUrl(url) {
-                if (!url || typeof url !== 'string') return url;
-                if (url.includes('cdn.jsdelivr.net')) return url;
-                return IMAGE_PROXY_CHAIN[0](url);
-            }
-
-            function handleImageProxyError(imgEl, originalUrl, fallbackImg) {
-                const attempt = parseInt(imgEl.dataset.proxyAttempt || '0', 10) + 1;
-                imgEl.dataset.proxyAttempt = attempt;
-                if (attempt < IMAGE_PROXY_CHAIN.length) {
-                    imgEl.src = IMAGE_PROXY_CHAIN[attempt](originalUrl);
-                } else {
-                    imgEl.onerror = null;
-                    imgEl.src = fallbackImg;
-                }
             }
 
             const coverImg = document.getElementById('gCover');
