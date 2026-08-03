@@ -274,8 +274,8 @@
                         <img src="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              alt="{{ game.title }}"
                              {% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}
-                             data-original="{{ game.cover_image | urlencode }}"
-                             onerror="handleImageProxyError(this, decodeURIComponent(this.dataset.original), 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
+                             data-original="{{ game.cover_image }}"
+                             onerror="handleImageProxyError(this, this.dataset.original, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
                              {% endif %}
                              class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out"
                              loading="lazy">
@@ -344,6 +344,8 @@
 
     </main>
 
+    {% include "partials/_image_proxy.html" %}
+
     <script>
         const API_BASE_URL = "{{ request.base_url }}api/games";
         let activeConsole = "";
@@ -386,29 +388,6 @@
             if (!url || typeof url !== 'string') return false;
             const trimmed = url.trim();
             return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-        }
-
-        const IMAGE_PROXY_CHAIN = [
-            (url) => `https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
-            (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
-            (url) => url
-        ];
-
-        function getProxiedImageUrl(url) {
-            if (!url || typeof url !== 'string') return url;
-            if (url.includes('cdn.jsdelivr.net')) return url;
-            return IMAGE_PROXY_CHAIN[0](url);
-        }
-
-        function handleImageProxyError(imgEl, originalUrl, fallbackImg) {
-            const attempt = parseInt(imgEl.dataset.proxyAttempt || '0', 10) + 1;
-            imgEl.dataset.proxyAttempt = attempt;
-            if (attempt < IMAGE_PROXY_CHAIN.length) {
-                imgEl.src = IMAGE_PROXY_CHAIN[attempt](originalUrl);
-            } else {
-                imgEl.onerror = null;
-                imgEl.src = fallbackImg;
-            }
         }
 
         // دالة تحديد مسار البانر بناءً على اسم المنصة
@@ -507,7 +486,7 @@
                 const cover = isSafeUrl(game.cover_image) ? getProxiedImageUrl(game.cover_image) : fallbackImg;
                 const bannerPath = getConsoleBanner(game.console);
                 const proxyErrorAttr = (game.cover_image && !game.cover_image.includes('cdn.jsdelivr.net'))
-                    ? `onerror="handleImageProxyError(this, '${encodeURIComponent(game.cover_image)}', '${fallbackImg}')"`
+                    ? `onerror="handleImageProxyError(this, '${escapeHtml(game.cover_image).replace(/'/g, "\\'")}', '${fallbackImg}')"`
                     : `onerror="this.src='${escapeHtml(fallbackImg)}'"`;
 
                 const card = `
