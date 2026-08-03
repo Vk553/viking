@@ -1,0 +1,27 @@
+<script>
+    const IMAGE_PROXY_CHAIN = [
+        (url) => `https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url=${encodeURIComponent(url)}`,
+        (url) => `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(url)}`,
+        (url) => url
+    ];
+
+    function shouldProxyImage(url) {
+        return !!url && typeof url === 'string' && !url.includes('cdn.jsdelivr.net');
+    }
+
+    function getProxiedImageUrl(url) {
+        if (!shouldProxyImage(url)) return url;
+        return IMAGE_PROXY_CHAIN[0](url);
+    }
+
+    function handleImageProxyError(imgEl, rawUrl, fallbackImg) {
+        const attempt = parseInt(imgEl.dataset.proxyAttempt || '0', 10) + 1;
+        imgEl.dataset.proxyAttempt = attempt;
+        if (attempt < IMAGE_PROXY_CHAIN.length) {
+            imgEl.src = IMAGE_PROXY_CHAIN[attempt](rawUrl);
+        } else {
+            imgEl.onerror = null;
+            imgEl.src = fallbackImg;
+        }
+    }
+</script>
