@@ -108,7 +108,12 @@
                         <img src="{% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}https://vk-image-proxy-v2.zied12345zied678900.workers.dev/?url={{ game.cover_image | urlencode }}{% elif game.cover_image %}{{ game.cover_image }}{% else %}https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80{% endif %}"
                              aria-hidden="true"
                              class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 saturate-150 rounded-3xl"
+                             {% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}
+                             data-original="{{ game.cover_image }}"
+                             onerror="handleImageProxyError(this, this.dataset.original, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
+                             {% else %}
                              onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80'; this.style.display=''"
+                             {% endif %}
                              loading="lazy">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40 rounded-3xl"></div>
 
@@ -117,7 +122,12 @@
                              alt="{{ game.title }}"
                              class="relative z-10 w-full h-full object-contain rounded-3xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 bg-gray-900"
                              loading="lazy"
-                             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80';">
+                             {% if game.cover_image and 'cdn.jsdelivr.net' not in game.cover_image %}
+                             data-original="{{ game.cover_image }}"
+                             onerror="handleImageProxyError(this, this.dataset.original, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
+                             {% else %}
+                             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80';"
+                             {% endif %}>
                     </div>
 
                     <!-- Game Info -->
@@ -212,6 +222,8 @@
         });
     </script>
     <script src="https://pl30153598.effectivecpmnetwork.com/df/a3/36/dfa336b5b295cd476b2e7b2a85312b55.js"></script>
+
+    {% include "partials/_image_proxy.html" %}
 
 </body>
 </html>
