@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import math
 import time
+import threading
 import re
 import json
 import logging
@@ -50,6 +51,31 @@ def check_rate_limit(ip: str) -> bool:
         return False
     request_tracker[ip].append(time.time())
     return True
+
+
+# ==========================================
+# Simple in-memory TTL cache (single-instance, thread-safe)
+# Reduces redundant Neon compute by serving repeated reads from memory.
+# ==========================================
+_cache_store = {}
+_cache_lock = threading.Lock()
+
+def cache_get(key: str):
+    """Return cached value if present and not expired, else None."""
+    with _cache_lock:
+        entry = _cache_store.get(key)
+        if entry is None:
+            return None
+        value, expires_at = entry
+        if time.time() > expires_at:
+            del _cache_store[key]
+            return None
+        return value
+
+def cache_set(key: str, value, ttl_seconds: int):
+    """Store a value in the cache with a TTL in seconds."""
+    with _cache_lock:
+        _cache_store[key] = (value, time.time() + ttl_seconds)
 
 
 # ==========================================
@@ -506,6 +532,11 @@ def get_games(
             detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
         )
 
+    cache_key = f"api_games:{console}:{is_arabic}:{search}:{page}:{limit}"
+    cached_response = cache_get(cache_key)
+    if cached_response is not None:
+        return cached_response
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -539,7 +570,7 @@ def get_games(
 
     conn.close()
 
-    return {
+    result = {
         "data": games,
         "pagination": {
             "current_page": page,
@@ -548,6 +579,8 @@ def get_games(
             "total_pages": total_pages
         }
     }
+    cache_set(cache_key, result, ttl_seconds=60)
+    return result
 
 
 @app.get("/api/games/{id}", response_model=GameResponse, status_code=status.HTTP_200_OK)
@@ -617,6 +650,9 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
     base_url = str(request.base_url).rstrip("/")
     url = f"{base_url}/game/{created_game['id']}-{created_game['slug']}"
     background_tasks.add_task(submit_to_indexnow_safely, [url])
+
+    with _cache_lock:
+        _cache_store.clear()
 
     return {
         "message": "تم إضافة اللعبة بنجاح",
@@ -699,6 +735,9 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
     if urls_to_submit:
         background_tasks.add_task(submit_to_indexnow_safely, urls_to_submit)
 
+    with _cache_lock:
+        _cache_store.clear()
+
     return {
         "message": "تم تعديل بيانات اللعبة بنجاح",
         "data": updated_game
@@ -727,6 +766,9 @@ def delete_game(id: int, background_tasks: BackgroundTasks, request: Request):
     base_url = str(request.base_url).rstrip("/")
     url = f"{base_url}/game/{id}-{game_slug}"
     background_tasks.add_task(submit_to_indexnow_safely, [url])
+
+    with _cache_lock:
+        _cache_store.clear()
 
     return {"message": f"تم حذف اللعبة ذات الرقم التعريفي {id} بنجاح"}
 
@@ -759,6 +801,11 @@ def redirect_download_page(id: Optional[int] = Query(None)):
 @app.get("/information/{id_slug}")
 def information_page(id_slug: str, request: Request):
     """Render the game information/detail page (step before download)"""
+    cache_key = f"information_page_html:{id_slug}"
+    cached_html = cache_get(cache_key)
+    if cached_html is not None:
+        return Response(content=cached_html, media_type="text/html", headers={"Cache-Control": "public, max-age=1800"})
+
     # Parse the leading integer ID from the path (before the first hyphen)
     parts = id_slug.split('-')
     if not parts or not parts[0].isdigit():
@@ -794,7 +841,7 @@ def information_page(id_slug: str, request: Request):
     # Convert game dict to JSON for inline embedding
     game_json = json.dumps(game, default=str).replace('<', '\\u003c')
 
-    return templates.TemplateResponse(
+    rendered = templates.TemplateResponse(
         request=request,
         name="information_game.html",
         context={
@@ -802,14 +849,22 @@ def information_page(id_slug: str, request: Request):
             "game": game,
             "game_json": game_json,
             "json_ld_json": json_ld_json
-        },
-        headers={"Cache-Control": "public, max-age=1800"}
+        }
     )
+    rendered_body = rendered.body.decode("utf-8")
+    cache_set(cache_key, rendered_body, ttl_seconds=600)
+
+    return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=1800"})
 
 
 @app.get("/game/{id_slug}")
 def game_page(id_slug: str, request: Request):
     """Render individual game download page with SEO metadata"""
+    cache_key = f"game_page_html:{id_slug}"
+    cached_html = cache_get(cache_key)
+    if cached_html is not None:
+        return Response(content=cached_html, media_type="text/html", headers={"Cache-Control": "public, max-age=600"})
+
     # Parse the leading integer ID from the path (before the first hyphen)
     parts = id_slug.split('-')
     if not parts or not parts[0].isdigit():
@@ -847,7 +902,7 @@ def game_page(id_slug: str, request: Request):
     game_dict_for_embed.pop('description', None)
     game_json = json.dumps(game_dict_for_embed, default=str).replace('<', '\\u003c')
 
-    return templates.TemplateResponse(
+    rendered = templates.TemplateResponse(
         request=request,
         name="download.html",
         context={
@@ -855,14 +910,22 @@ def game_page(id_slug: str, request: Request):
             "game": game,
             "game_json": game_json,
             "json_ld_json": json_ld_json
-        },
-        headers={"Cache-Control": "public, max-age=600"}
+        }
     )
+    rendered_body = rendered.body.decode("utf-8")
+    cache_set(cache_key, rendered_body, ttl_seconds=180)
+
+    return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=600"})
 
 
 @app.get("/")
 def index_page(request: Request):
     """Render homepage with server-side rendered first page of games"""
+    cache_key = "index_page_html"
+    cached_html = cache_get(cache_key)
+    if cached_html is not None:
+        return Response(content=cached_html, media_type="text/html", headers={"Cache-Control": "public, max-age=300"})
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -880,15 +943,19 @@ def index_page(request: Request):
         "canonical_url": f"{base_url}/"
     }
 
-    return templates.TemplateResponse(
+    rendered = templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "seo_meta": seo_meta,
             "games": games
-        },
-        headers={"Cache-Control": "public, max-age=300"}
+        }
     )
+    # Render the template body to a string so it can be cached and reused
+    rendered_body = rendered.body.decode("utf-8")
+    cache_set(cache_key, rendered_body, ttl_seconds=120)
+
+    return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/sitemap.xml")
