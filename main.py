@@ -583,6 +583,64 @@ def get_games(
     return result
 
 
+@app.get("/api/admin/games", status_code=status.HTTP_200_OK, dependencies=[Depends(verify_token)])
+def get_games_admin(
+        console: Optional[str] = Query(None),
+        is_arabic: Optional[int] = Query(None),
+        search: Optional[str] = Query(None),
+        page: int = Query(1, ge=1),
+        limit: int = Query(12, ge=1, le=100),
+):
+    if is_arabic is not None and is_arabic not in (0, 1):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
+        )
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    base_query = "FROM games WHERE 1=1"
+    params: List = []
+
+    if console and console.lower() != 'all':
+        base_query += " AND LOWER(console) = LOWER(%s)"
+        params.append(console)
+
+    if is_arabic is not None:
+        base_query += " AND is_arabic = %s"
+        params.append(is_arabic)
+
+    if search:
+        base_query += " AND title ILIKE %s"
+        params.append(f"%{search}%")
+
+    count_query = f"SELECT COUNT(*) as total {base_query}"
+    cursor.execute(count_query, params)
+    total_items = cursor.fetchone()["total"]
+    total_pages = math.ceil(total_items / limit) if limit > 0 else 1
+
+    offset = (page - 1) * limit
+    data_query = f"SELECT * {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
+    data_params = params + [limit, offset]
+
+    cursor.execute(data_query, data_params)
+    rows = cursor.fetchall()
+    games = [dict(row) for row in rows]
+
+    conn.close()
+
+    return {
+        "data": games,
+        "pagination": {
+            "current_page": page,
+            "limit": limit,
+            "total_items": total_items,
+            "total_pages": total_pages
+        }
+    }
+
+
 @app.get("/api/games/{id}", response_model=GameResponse, status_code=status.HTTP_200_OK)
 def get_game_by_id(id: int):
     conn = get_db_connection()
