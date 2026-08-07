@@ -28,7 +28,7 @@ from indexnow import submit_urls_to_indexnow
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_production")
 security_scheme = HTTPBearer()
-SITE_NAME = "Viking"
+SITE_NAME = "VK Store"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -126,6 +126,22 @@ def slugify(title: str, console: str) -> str:
         slug = f"{console.lower()}-game"
 
     return slug
+
+
+def get_base_url(request: Request) -> str:
+    """
+    Extracts the host from headers safely and forces HTTPS for production.
+    Prevents HTTP canonical mismatches behind Render's reverse proxy.
+    """
+    host = request.headers.get("x-forwarded-host") or request.url.hostname
+    port = request.url.port
+
+    # Check for local development to avoid breaking local testing
+    if host in ["localhost", "127.0.0.1"] or str(host).startswith("localhost:"):
+        port_str = f":{port}" if port and port not in (80, 443) else ""
+        return f"http://{host}{port_str}"
+
+    return f"https://{host}"
 
 
 def build_seo_meta(game: dict, base_url: str, path_prefix: str = "game") -> dict:
@@ -705,9 +721,10 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
     conn.close()
 
     # Submit to IndexNow in background
-    base_url = str(request.base_url).rstrip("/")
-    url = f"{base_url}/game/{created_game['id']}-{created_game['slug']}"
-    background_tasks.add_task(submit_to_indexnow_safely, [url])
+    base_url = get_base_url(request)
+    game_url = f"{base_url}/game/{created_game['id']}-{created_game['slug']}"
+    info_url = f"{base_url}/information/{created_game['id']}-{created_game['slug']}"
+    background_tasks.add_task(submit_to_indexnow_safely, [game_url, info_url])
 
     with _cache_lock:
         _cache_store.clear()
@@ -772,13 +789,16 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
 
     # Submit to IndexNow in background if SEO-relevant fields changed
     urls_to_submit = []
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
 
     if old_slug != new_slug:
-        # Slug changed: submit both old and new URLs
-        old_url = f"{base_url}/game/{id}-{old_slug}"
-        new_url = f"{base_url}/game/{id}-{new_slug}"
-        urls_to_submit.extend([old_url, new_url])
+        # Slug changed: submit both old and new URLs for both /game/ and /information/
+        urls_to_submit.extend([
+            f"{base_url}/game/{id}-{old_slug}",
+            f"{base_url}/information/{id}-{old_slug}",
+            f"{base_url}/game/{id}-{new_slug}",
+            f"{base_url}/information/{id}-{new_slug}"
+        ])
     else:
         # Slug unchanged: check if title, description, or cover_image changed
         seo_fields_changed = (
@@ -787,8 +807,10 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
             old_cover_image != game.cover_image
         )
         if seo_fields_changed:
-            url = f"{base_url}/game/{id}-{new_slug}"
-            urls_to_submit.append(url)
+            urls_to_submit.extend([
+                f"{base_url}/game/{id}-{new_slug}",
+                f"{base_url}/information/{id}-{new_slug}"
+            ])
 
     if urls_to_submit:
         background_tasks.add_task(submit_to_indexnow_safely, urls_to_submit)
@@ -821,9 +843,10 @@ def delete_game(id: int, background_tasks: BackgroundTasks, request: Request):
     conn.close()
 
     # Submit to IndexNow in background
-    base_url = str(request.base_url).rstrip("/")
-    url = f"{base_url}/game/{id}-{game_slug}"
-    background_tasks.add_task(submit_to_indexnow_safely, [url])
+    base_url = get_base_url(request)
+    game_url = f"{base_url}/game/{id}-{game_slug}"
+    info_url = f"{base_url}/information/{id}-{game_slug}"
+    background_tasks.add_task(submit_to_indexnow_safely, [game_url, info_url])
 
     with _cache_lock:
         _cache_store.clear()
@@ -881,7 +904,7 @@ def information_page(id_slug: str, request: Request):
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
 
     # Build SEO metadata
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
     seo_meta = build_seo_meta(game, base_url, path_prefix="information")
 
     # Build JSON-LD structured data
@@ -940,7 +963,7 @@ def game_page(id_slug: str, request: Request):
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
 
     # Build SEO metadata
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
     seo_meta = build_seo_meta(game, base_url)
 
     # Build JSON-LD structured data
@@ -993,7 +1016,7 @@ def index_page(request: Request):
     conn.close()
 
     # Default homepage SEO meta
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
     seo_meta = {
         "title": f"{SITE_NAME} | Download PS5, PS4, PS3, PS2, PS1, PC, Xbox, PSP Games",
         "description": f"Download the latest games for all platforms including PS5, PS4, PS3, PS2, PS1, PC, Xbox 360, and PSP. Fast direct links, updates, DLCs, and installation guides.",
@@ -1019,7 +1042,7 @@ def index_page(request: Request):
 @app.get("/sitemap.xml")
 def sitemap(request: Request):
     """Generate XML sitemap for all games"""
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, slug, updated_at FROM games ORDER BY id ASC")
@@ -1037,13 +1060,23 @@ def sitemap(request: Request):
     xml_content += f'    <priority>1.0</priority>\n'
     xml_content += f'  </url>\n'
 
-    # Add game pages
+    # Add game pages and information pages
     for game in games:
-        loc = f"{base_url}/game/{game['id']}-{game['slug']}"
         lastmod = game['updated_at'].strftime('%Y-%m-%d') if game['updated_at'] else datetime.now().strftime('%Y-%m-%d')
-
+        
+        # 1. Information Page (Higher priority as it is the landing page)
+        info_loc = f"{base_url}/information/{game['id']}-{game['slug']}"
         xml_content += f'  <url>\n'
-        xml_content += f'    <loc>{loc}</loc>\n'
+        xml_content += f'    <loc>{info_loc}</loc>\n'
+        xml_content += f'    <lastmod>{lastmod}</lastmod>\n'
+        xml_content += f'    <changefreq>weekly</changefreq>\n'
+        xml_content += f'    <priority>0.9</priority>\n'
+        xml_content += f'  </url>\n'
+
+        # 2. Game Download Page
+        game_loc = f"{base_url}/game/{game['id']}-{game['slug']}"
+        xml_content += f'  <url>\n'
+        xml_content += f'    <loc>{game_loc}</loc>\n'
         xml_content += f'    <lastmod>{lastmod}</lastmod>\n'
         xml_content += f'    <changefreq>weekly</changefreq>\n'
         xml_content += f'    <priority>0.8</priority>\n'
@@ -1060,7 +1093,7 @@ def sitemap(request: Request):
 @app.get("/robots.txt")
 def robots(request: Request):
     """Generate robots.txt file"""
-    base_url = str(request.base_url).rstrip("/")
+    base_url = get_base_url(request)
     content = f"""User-agent: *
 Allow: /
 Disallow: /api/
