@@ -255,6 +255,30 @@
         .btn-secondary-dark:hover { background: rgba(255,255,255,0.09); }
         .btn-secondary-dark:active { transform: scale(0.96); }
 
+        /* --- Double-click ad-gate hint (appears after first click on any download button) --- */
+        .awaiting-second-click {
+            position: relative;
+        }
+        .second-click-hint {
+            position: absolute;
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: 700;
+            color: #66fcf1;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            animation: hint-pulse 1.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes hint-pulse {
+            0%, 100% { opacity: 0.6; }
+            50%      { opacity: 1; }
+        }
+
         /* --- Dynamic grid for download buttons --- */
         #downloadBtnsGrid { display: grid; gap: 1rem; }
         #downloadBtnsGrid.cols-1 { grid-template-columns: 1fr; }
@@ -354,7 +378,7 @@
                             <span class="text-xs text-gray-400"><i class="fa-solid fa-shield-check text-emerald-400 ml-1"></i> روابط مفحوصة ومستضافة برابط مباشر</span>
                         </div>
 
-                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-2xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
+                        <h1 id="gTitle" class="text-2xl sm:text-3xl lg:text-5xl font-black text-white mt-3 lg:mt-2 leading-tight lg:tracking-tight">{{ seo_meta.h1 }}</h1>
 
                         <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-xs text-gray-300">
                             <div class="bg-white/5 lg:bg-white/[0.04] px-3 py-1.5 lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl border border-white/5 lg:border-white/10 lg:hover:border-cyan-400/30 lg:transition-colors">
@@ -462,7 +486,7 @@
                             <i class="fa-brands fa-telegram text-3xl text-[#229ED9] group-hover:scale-110 transition-transform"></i>
                             <span class="text-xs font-bold text-gray-300 group-hover:text-white">Telegram</span>
                         </a>
-                        <a href="https://discord.gg/hGP2634F2h" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group lg:hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)] lg:hover:-translate-y-0.5">
+                        <a href="https://discord.gg/DsvwpTgaj" target="_blank" rel="noopener noreferrer" class="bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group lg:hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)] lg:hover:-translate-y-0.5">
                             <i class="fa-brands fa-discord text-3xl text-[#5865F2] group-hover:scale-110 transition-transform"></i>
                             <span class="text-xs font-bold text-gray-300 group-hover:text-white">Discord</span>
                         </a>
@@ -570,6 +594,12 @@
         const API_BASE_URL = "{{ request.base_url }}api/games";
         const COUNTDOWN_START = 10;
         const CIRCUMFERENCE   = 2 * Math.PI * 30.2; // ≈ 189.7
+
+        // ─── DOUBLE-CLICK AD-GATE ───────────────────────────────────────────────────
+        // Tracks which linkKeys have already had their "first click" ad-gate triggered this session.
+        // Resets on page reload (in-memory only, no persistence needed).
+        const firstClickDone = new Set();
+        const SMARTLINK_AD_URL = 'https://www.effectivecpmnetwork.com/eui5ufii?key=047fea461aa7fd86cbf52fc633357035';
 
         // ─── STATE ────────────────────────────────────────────────────────────────
         let currentGameData     = null;
@@ -735,6 +765,39 @@
             renderDownloadButtons(game);
         }
 
+        // ─── DOUBLE-CLICK AD-GATE HANDLER ───────────────────────────────────────────
+        /**
+         * Shared double-click gate for all download buttons.
+         * First click on a given linkKey: opens the ad in a new tab, prevents navigation, and
+         * updates the button's visual state to hint "click again to continue".
+         * Second click on the same linkKey: allows normal <a href> navigation to proceed.
+         */
+        function handleDownloadButtonClick(event, linkKey, btnEl) {
+            if (!firstClickDone.has(linkKey)) {
+                event.preventDefault();
+                firstClickDone.add(linkKey);
+                window.open(SMARTLINK_AD_URL, '_blank', 'noopener,noreferrer');
+                applyAwaitingSecondClickState(btnEl);
+                return;
+            }
+            // Second click: do nothing extra — let the browser follow btnEl.href normally.
+        }
+
+        /**
+         * Updates a button's visual state after its first click, to hint the user should click again.
+         * Adds a small pulsing badge/label without altering the button's core layout or existing classes.
+         */
+        function applyAwaitingSecondClickState(btnEl) {
+            btnEl.classList.add('awaiting-second-click');
+            if (btnEl.dataset.secondClickApplied === '1') return; // avoid duplicate badge insertion
+            btnEl.dataset.secondClickApplied = '1';
+
+            const hint = document.createElement('span');
+            hint.className = 'second-click-hint';
+            hint.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> اضغط مرة أخرى للمتابعة';
+            btnEl.appendChild(hint);
+        }
+
         // ─── RENDER DOWNLOAD BUTTONS ──────────────────────────────────────────────
         // Button strategy (Plan B):
         //   • game_link   → PRIMARY FUNNEL button  → opens countdown modal → monetized URL shortener
@@ -832,10 +895,12 @@
                 const rawUrl = game[def.linkKey].trim();
 
                 if (def.type === 'primary') {
-                    // ── PRIMARY: glowing cyan gradient, opens countdown modal ────────
-                    const btn = document.createElement('button');
+                    // ── PRIMARY: glowing cyan gradient, links to ad-gated download page ────────
+                    const btn = document.createElement('a');
                     btn.className = 'btn-primary-funnel lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
+                    btn.href = `/download-link/${game.id}-${game.slug || 'game'}?type=${def.linkKey}`;
+                    btn.addEventListener('click', (e) => handleDownloadButtonClick(e, def.linkKey, btn));
 
                     const inner = document.createElement('div');
                     inner.className = 'relative z-10 flex items-center justify-center gap-3';
@@ -860,14 +925,15 @@
                     inner.appendChild(textDiv);
                     btn.appendChild(inner);
 
-                    btn.addEventListener('click', () => startDownloadFunnel(def.linkKey));
                     grid.appendChild(btn);
 
                 } else if (def.type === 'mirror') {
-                    // ── MIRROR: clean trustworthy look, instant open + pop-under ─────
-                    const btn = document.createElement('button');
+                    // ── MIRROR: clean trustworthy look, links to ad-gated download page ─────
+                    const btn = document.createElement('a');
                     btn.className = 'btn-mirror-direct lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
+                    btn.href = `/download-link/${game.id}-${game.slug || 'game'}?type=${def.linkKey}`;
+                    btn.addEventListener('click', (e) => handleDownloadButtonClick(e, def.linkKey, btn));
 
                     const icon = document.createElement('i');
                     icon.className = `fa-solid ${def.icon} text-emerald-400 text-lg`;
@@ -905,14 +971,15 @@
 
                     btn.appendChild(textDiv);
 
-                    btn.addEventListener('click', () => handleMirrorClick(rawUrl));
                     grid.appendChild(btn);
 
                 } else {
-                    // ── SECONDARY DARK: update / DLC / extras → countdown modal ───────
-                    const btn = document.createElement('button');
+                    // ── SECONDARY DARK: update / DLC / extras → links to ad-gated download page ───────
+                    const btn = document.createElement('a');
                     btn.className = 'btn-secondary-dark lg:hover:scale-[1.02] lg:hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.4)] lg:transition-all lg:duration-300 lg:py-5 lg:text-base';
                     btn.setAttribute('aria-label', def.label);
+                    btn.href = `/download-link/${game.id}-${game.slug || 'game'}?type=${def.linkKey}`;
+                    btn.addEventListener('click', (e) => handleDownloadButtonClick(e, def.linkKey, btn));
 
                     const icon = document.createElement('i');
                     icon.className = `fa-solid ${def.icon} ${def.iconColor || 'text-cyan-400'} text-xl`;
@@ -933,7 +1000,6 @@
 
                     btn.appendChild(textDiv);
 
-                    btn.addEventListener('click', () => startDownloadFunnel(def.linkKey));
                     grid.appendChild(btn);
                 }
             });
