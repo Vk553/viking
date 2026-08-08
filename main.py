@@ -671,6 +671,35 @@ def get_game_by_id(id: int):
     return row
 
 
+@app.get("/api/reveal-link/{id_slug}", status_code=status.HTTP_200_OK)
+def reveal_download_link(id_slug: str, type: str = Query("game_link")):
+    """Returns only the requested link column's URL for a given game, used by download_link.html after the 3-step ad gate completes."""
+    valid_link_columns = {
+        "game_link", "update_link", "dlc_link",
+        "extra_1_url", "extra_2_url", "extra_3_url", "extra_4_url", "extra_5_url"
+    }
+    if type not in valid_link_columns:
+        raise HTTPException(status_code=400, detail="Invalid link type requested")
+
+    parts = id_slug.split('-')
+    if not parts or not parts[0].isdigit():
+        raise HTTPException(status_code=404, detail="Invalid game URL")
+
+    game_id = int(parts[0])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Safe: `type` is validated against a strict whitelist above before being used in an f-string
+    cursor.execute(f"SELECT {type} FROM games WHERE id = %s", (game_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not (row[type] and row[type].strip()):
+        raise HTTPException(status_code=404, detail="الرابط غير متوفر")
+
+    return {"url": row[type]}
+
+
 @app.post("/api/games", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_token)])
 def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Request):
     conn = get_db_connection()
@@ -997,6 +1026,92 @@ def game_page(id_slug: str, request: Request):
     cache_set(cache_key, rendered_body, ttl_seconds=180)
 
     return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=600"})
+
+
+@app.get("/download-link/{id_slug}")
+def download_link_page(id_slug: str, request: Request, type: str = Query("game_link")):
+    """Render the ad-gated 3-step download link page for ANY link type (game_link, update_link, dlc_link, extra_1_url..extra_5_url). Does NOT expose the actual download URL in page source."""
+    
+    # Validate the requested link type against a strict whitelist
+    valid_link_columns = {
+        "game_link", "update_link", "dlc_link",
+        "extra_1_url", "extra_2_url", "extra_3_url", "extra_4_url", "extra_5_url"
+    }
+    if type not in valid_link_columns:
+        raise HTTPException(status_code=400, detail="Invalid link type requested")
+
+    cache_key = f"download_link_page_html:{id_slug}:{type}"
+    cached_html = cache_get(cache_key)
+    if cached_html is not None:
+        return Response(content=cached_html, media_type="text/html", headers={"Cache-Control": "public, max-age=180"})
+
+    parts = id_slug.split('-')
+    if not parts or not parts[0].isdigit():
+        raise HTTPException(status_code=404, detail="Invalid game URL")
+
+    game_id = int(parts[0])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, title, console, cover_image, slug, size, region, game_code, "
+        "game_link, update_link, dlc_link, "
+        "extra_1_label, extra_1_url, extra_2_label, extra_2_url, "
+        "extra_3_label, extra_3_url, extra_4_label, extra_4_url, "
+        "extra_5_label, extra_5_url "
+        "FROM games WHERE id = %s", (game_id,)
+    )
+    game = cursor.fetchone()
+    conn.close()
+
+    if not game or not (game.get(type) and game[type].strip()):
+        raise HTTPException(status_code=404, detail="لا يوجد رابط تحميل متاح لهذا العنصر")
+
+    # Determine a human-readable label for this link type
+    static_labels = {
+        "game_link": "تحميل اللعبة",
+        "update_link": "تحميل التحديث",
+        "dlc_link": "تحميل الإضافات",
+    }
+    if type in static_labels:
+        link_label = static_labels[type]
+    else:
+        # extra_N_url -> use the game's own extra_N_label if set, else a generic fallback
+        label_key = type.replace("_url", "_label")
+        link_label = game.get(label_key) or "تحميل إضافي"
+
+    base_url = get_base_url(request)
+    seo_meta = {
+        "title": f"تحميل {game['title']} - {SITE_NAME}",
+        "canonical_url": f"{base_url}/download-link/{game['id']}-{game['slug']}?type={type}"
+    }
+
+    # Only expose display fields to the template — the actual link value is deliberately excluded
+    display_game = {
+        "id": game["id"],
+        "title": game["title"],
+        "console": game["console"],
+        "cover_image": game["cover_image"],
+        "slug": game["slug"],
+        "size": game["size"],
+        "region": game["region"],
+        "game_code": game["game_code"],
+    }
+
+    rendered = templates.TemplateResponse(
+        request=request,
+        name="download_link.html",
+        context={
+            "seo_meta": seo_meta,
+            "game": display_game,
+            "link_type": type,
+            "link_label": link_label
+        }
+    )
+    rendered_body = rendered.body.decode("utf-8")
+    cache_set(cache_key, rendered_body, ttl_seconds=180)
+
+    return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=180"})
 
 
 @app.get("/")
