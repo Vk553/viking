@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_meta.title }}</title>
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="{{ seo_meta.canonical_url }}">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 'cairo': ['Cairo', 'sans-serif'] },
+                    colors: {
+                        darkBg:     '#0b0c10',
+                        cardBg:     '#1f2833',
+                        neonAccent: '#66fcf1',
+                        subText:    '#c5c6c7'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0b0c10; color: #ffffff; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0c10; }
+        ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
+        ::-webkit-scrollbar-thumb:hover { background: #66fcf1; }
+
+        /* --- Countdown Ring --- */
+        .countdown-ring { position: relative; width: 72px; height: 72px; }
+        .countdown-ring svg { transform: rotate(-90deg); }
+        .countdown-ring .ring-bg {
+            fill: none;
+            stroke: rgba(102, 252, 241, 0.1);
+            stroke-width: 5;
+        }
+        .countdown-ring .ring-fill {
+            fill: none;
+            stroke: #66fcf1;
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-dasharray: 189.6;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+            filter: drop-shadow(0 0 6px rgba(102,252,241,0.7));
+        }
+        .countdown-ring .ring-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #66fcf1;
+            text-shadow: 0 0 12px rgba(102,252,241,0.6);
+        }
+
+        /* --- Step Button States --- */
+        .step-btn {
+            transition: all 0.3s ease;
+        }
+        .step-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .step-btn.completed {
+            background: linear-gradient(135deg, #10b981, #06d6a0);
+            color: #000;
+            border: none;
+        }
+
+        /* --- Final Download Button --- */
+        .btn-ready {
+            background: linear-gradient(135deg, #10b981, #06d6a0, #00f5c4);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2);
+            animation: pulse-green 2s infinite;
+            transition: transform 0.1s ease;
+        }
+        .btn-ready:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(16,185,129,0.7), 0 0 80px rgba(16,185,129,0.3);
+        }
+        .btn-ready:active { transform: scale(0.97); }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2); }
+            50%       { box-shadow: 0 0 45px rgba(16,185,129,0.75), 0 0 90px rgba(16,185,129,0.35); }
+        }
+
+        /* --- Scroll-down indicator (blue pulse) --- */
+        .scroll-pulse-blue {
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            box-shadow: 0 0 25px rgba(34,211,238,0.5), 0 0 50px rgba(34,211,238,0.2);
+            animation: pulse-blue 1.8s infinite;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.15s ease;
+        }
+        .scroll-pulse-blue:hover {
+            transform: scale(1.08);
+        }
+        .scroll-pulse-blue:active {
+            transform: scale(0.95);
+        }
+        @keyframes pulse-blue {
+            0%, 100% { box-shadow: 0 0 25px rgba(34,211,238,0.5), 0 0 50px rgba(34,211,238,0.2); }
+            50%       { box-shadow: 0 0 40px rgba(34,211,238,0.75), 0 0 75px rgba(34,211,238,0.35); }
+        }
+    </style>
+
+    {% include "partials/_image_proxy.html" %}
+</head>
+<body class="min-h-screen selection:bg-cyan-500 selection:text-black pb-16 flex flex-col">
+
+    <!-- ===== HEADER ===== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0c10]/80 border-b border-white/10 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 group">
+                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="VK Store Logo" class="h-16 md:h-20 w-auto select-none pointer-events-none object-contain">
+                </div>
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <a href="/game/{{ game.id }}-{{ game.slug }}" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>صفحة التحميلات</span>
+                    </a>
+                    <a href="/" class="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold border border-cyan-400 transition flex items-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)]">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>الرئيسية</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MAIN ===== -->
+    <main class="max-w-4xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 lg:mt-14 flex-grow w-full">
+
+        <!-- Game Card -->
+        <div class="bg-gradient-to-br from-[#1a1f2b]/90 to-[#10131a]/90 backdrop-blur-xl border border-cyan-400/10 rounded-3xl p-6 lg:p-10 shadow-[0_0_60px_-15px_rgba(34,211,238,0.15)] relative overflow-hidden mb-8">
+            <div class="absolute -right-20 -top-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                <!-- Cover Image -->
+                <div class="relative w-full lg:w-64 h-80 lg:h-96 shrink-0">
+                    <img id="gCover"
+                         src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80"
+                         alt="{{ game.title }}"
+                         class="w-full h-full object-contain rounded-3xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)] border border-white/10 lg:border-white/20 bg-gray-900"
+                         loading="lazy">
+                </div>
+
+                <!-- Game Info -->
+                <div class="flex-1 text-center lg:text-right">
+                    <h1 class="text-3xl lg:text-4xl font-black text-white mb-3 leading-tight">{{ game.title }}</h1>
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-gamepad"></i>
+                        <span>{{ game.console }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mt-4">
+                        {% if game.size and game.size.strip() %}
+                        <div class="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
+                            <span class="text-gray-500 block text-[10px]">الحجم</span>
+                            <span dir="ltr" class="font-bold text-cyan-400 text-sm">{{ game.size }}</span>
+                        </div>
+                        {% endif %}
+                        {% if game.region and game.region.strip() %}
+                        <div class="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
+                            <span class="text-gray-500 block text-[10px]">المنطقة</span>
+                            <span dir="ltr" class="font-bold text-gray-200 text-sm">{{ game.region }}</span>
+                        </div>
+                        {% endif %}
+                        {% if game.game_code and game.game_code.strip() %}
+                        <div class="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
+                            <span class="text-gray-500 block text-[10px]">كود اللعبة</span>
+                            <span dir="ltr" class="font-bold text-gray-200 text-sm">{{ game.game_code }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 Steps Section -->
+        <div class="space-y-4 mb-8">
+            <h2 class="text-xl font-bold text-white mb-6 text-center">أكمل الخطوات الثلاث للحصول على رابط {{ link_label }}</h2>
+
+            <!-- Step 1 -->
+            <div id="step1" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right">
+                <div class="step-number w-12 h-12 rounded-full bg-cyan-400/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 font-black text-xl shrink-0">1</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الأولى</h3>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                </div>
+                <button id="step1Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-sm transition" onclick="handleStepClick(1)">
+                    المتابعة للخطوة 1
+                </button>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step2" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
+                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">2</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الثانية</h3>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                </div>
+                <button id="step2Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(2)">
+                    المتابعة للخطوة 2
+                </button>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="step3" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
+                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">3</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الثالثة</h3>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                </div>
+                <button id="step3Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(3)">
+                    المتابعة للخطوة 3
+                </button>
+            </div>
+        </div>
+
+        <!-- Scroll-down indicator: appears after all 3 steps complete -->
+        <div id="scrollDownIndicator" class="hidden flex flex-col items-center justify-center gap-2 my-8">
+            <button id="scrollDownBtn"
+                    class="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl scroll-pulse-blue"
+                    aria-label="انتقل للأسفل للمتابعة">
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <span class="text-xs text-gray-400 font-bold">اضغط للمتابعة</span>
+        </div>
+
+        <!-- Native Banner Ad -->
+        <div class="w-full p-5 mt-8 lg:mt-0 min-h-[180px] overflow-hidden select-none">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">قد يعجبك أيضاً / You Might Also Like</span>
+                <div class="flex-1 border-t border-white/5"></div>
+                <span class="text-[9px] text-gray-600 uppercase tracking-wider">Sponsored</span>
+            </div>
+            <script async="async" data-cfasync="false" src="https://pl30153604.effectivecpmnetwork.com/f772eec144fd5c9c302dfc2b6f74cfdc/invoke.js"></script>
+            <div id="container-f772eec144fd5c9c302dfc2b6f74cfdc"></div>
+        </div>
+
+        <!-- Final Download Button (hidden until all steps complete) -->
+        <div id="finalSection" class="hidden text-center mb-8">
+            <button id="finalDownloadBtn" class="btn-ready px-8 py-4 rounded-2xl text-lg font-black inline-flex items-center gap-3" onclick="revealDownloadLink()">
+                <i class="fa-solid fa-download"></i>
+                <span>الحصول على رابط {{ link_label }}</span>
+            </button>
+        </div>
+
+        <!-- Error Box -->
+        <div id="errorBox" class="hidden text-center py-10 bg-[#151821] rounded-3xl border border-red-500/20 p-8 mb-8">
+            <i class="fa-solid fa-circle-exclamation text-5xl text-red-400 mb-4"></i>
+            <h2 id="errorText" class="text-xl font-bold text-white">حدث خطأ ما</h2>
+        </div>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="mt-16 border-t border-white/5 py-6 text-center text-xs text-gray-500">
+        جميع الحقوق محفوظة © Viking 2026
+    </footer>
+
+    <!-- Social Bar Ad -->
+    <script src="https://pl30136178.effectivecpmnetwork.com/29/84/ba/2984ba408de8a3880ee20d101866142b.js"></script>
+
+    <script>
+        // Embed game ID, slug, link type, and link label for the reveal-link fetch call
+        const gameId = {{ game.id }};
+        const gameSlug = "{{ game.slug }}";
+        const linkType = "{{ link_type }}";
+        const linkLabel = "{{ link_label }}";
+
+        // Step state management
+        const CIRCUMFERENCE = 2 * Math.PI * 30.2;
+        const AD_URL = 'https://www.effectivecpmnetwork.com/eui5ufii?key=047fea461aa7fd86cbf52fc633357035';
+        const COUNTDOWN_SECONDS = 5;
+
+        let completedSteps = [false, false, false];
+        let countdownIntervals = [null, null, null];
+
+        // Initialize cover image with proxy and wire up scroll-down button
+        document.addEventListener('DOMContentLoaded', () => {
+            const coverImg = document.getElementById('gCover');
+            const fallback = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80';
+            
+            {% if game.cover_image %}
+            const rawCoverUrl = "{{ game.cover_image }}";
+            if (rawCoverUrl && rawCoverUrl.trim() && !rawCoverUrl.includes('cdn.jsdelivr.net')) {
+                coverImg.src = getProxiedImageUrl(rawCoverUrl);
+                coverImg.dataset.proxyAttempt = '0';
+                coverImg.onerror = () => handleImageProxyError(coverImg, rawCoverUrl, fallback);
+            } else if (rawCoverUrl && rawCoverUrl.trim()) {
+                coverImg.src = rawCoverUrl;
+            }
+            {% endif %}
+
+            // Wire up scroll-down button
+            document.getElementById('scrollDownBtn').addEventListener('click', handleScrollDownClick);
+        });
+
+        function handleStepClick(stepNum) {
+            const btn = document.getElementById(`step${stepNum}Btn`);
+            const stepCard = document.getElementById(`step${stepNum}`);
+            const stepNumber = stepCard.querySelector('.step-number');
+
+            // Open ad in new tab
+            window.open(AD_URL, '_blank', 'noopener,noreferrer');
+
+            // Disable button and start countdown
+            btn.disabled = true;
+            let secondsLeft = COUNTDOWN_SECONDS;
+
+            // Replace button content with countdown ring
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `
+                <div class="countdown-ring">
+                    <svg width="72" height="72">
+                        <circle class="ring-bg" cx="36" cy="36" r="30.2"></circle>
+                        <circle class="ring-fill" cx="36" cy="36" r="30.2"></circle>
+                    </svg>
+                    <div class="ring-text">${secondsLeft}</div>
+                </div>
+            `;
+
+            const ringFill = btn.querySelector('.ring-fill');
+            const ringText = btn.querySelector('.ring-text');
+
+            countdownIntervals[stepNum - 1] = setInterval(() => {
+                secondsLeft--;
+                ringText.textContent = secondsLeft;
+
+                // Update ring progress
+                const progress = secondsLeft / COUNTDOWN_SECONDS;
+                ringFill.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownIntervals[stepNum - 1]);
+                    markStepComplete(stepNum, stepCard, stepNumber, btn);
+                }
+            }, 1000);
+        }
+
+        function markStepComplete(stepNum, stepCard, stepNumber, btn) {
+            completedSteps[stepNum - 1] = true;
+
+            // Update step card styling
+            stepCard.classList.remove('opacity-50');
+            stepCard.classList.add('border-emerald-500/30');
+
+            // Update step number to checkmark
+            stepNumber.classList.remove('bg-cyan-400/20', 'border-cyan-400', 'text-cyan-400', 'bg-gray-700', 'border-gray-600', 'text-gray-400');
+            stepNumber.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+            stepNumber.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+            // Update button to completed state
+            btn.classList.add('completed');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> مكتمل';
+
+            // Enable next step
+            if (stepNum < 3) {
+                const nextBtn = document.getElementById(`step${stepNum + 1}Btn`);
+                const nextCard = document.getElementById(`step${stepNum + 1}`);
+                const nextNumber = nextCard.querySelector('.step-number');
+
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('bg-gray-700', 'text-gray-400');
+                nextBtn.classList.add('bg-cyan-400', 'hover:bg-cyan-300', 'text-black');
+
+                nextCard.classList.remove('opacity-50');
+                nextNumber.classList.remove('bg-gray-700', 'border-gray-600', 'text-gray-400');
+                nextNumber.classList.add('bg-cyan-400/20', 'border-cyan-400', 'text-cyan-400');
+            }
+
+            // Check if all steps complete
+            if (completedSteps.every(step => step)) {
+                document.getElementById('scrollDownIndicator').classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Called when the user clicks the blue pulsing scroll-down indicator after completing all 3 steps.
+         * Reveals the final download section and smooth-scrolls it into view, so the user visually passes
+         * over the Native Banner ad on the way down (improving ad viewability).
+         */
+        function handleScrollDownClick() {
+            const finalSection = document.getElementById('finalSection');
+            const indicator = document.getElementById('scrollDownIndicator');
+
+            finalSection.classList.remove('hidden');
+            indicator.classList.add('hidden');
+
+            finalSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function getSecureUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                const parsed = new URL(url);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return url;
+                }
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        function revealDownloadLink() {
+            const btn = document.getElementById('finalDownloadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الرابط...';
+
+            fetch(`/api/reveal-link/${gameId}-${gameSlug}?type=${encodeURIComponent(linkType)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch link');
+                    return response.json();
+                })
+                .then(data => {
+                    const secureUrl = getSecureUrl(data.url);
+                    if (secureUrl) {
+                        window.open(secureUrl, '_blank', 'noopener,noreferrer');
+                        btn.innerHTML = '<i class="fa-solid fa-check"></i> تم';
+                    } else {
+                        showError('الرابط غير صالح');
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-download"></i> الحصول على رابط ${linkLabel}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error revealing link:', error);
+                    showError('فشل في جلب الرابط. يرجى المحاولة مرة أخرى.');
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-download"></i> الحصول على رابط ${linkLabel}`;
+                });
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
