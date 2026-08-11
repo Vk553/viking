@@ -170,7 +170,7 @@
 
                 <!-- Game Info -->
                 <div class="flex-1 text-center lg:text-right">
-                    <h1 class="text-3xl lg:text-2xl font-black text-white mb-3 leading-tight">{{ game.title }}</h1>
+                    <h1 class="text-3xl lg:text-4xl font-black text-white mb-3 leading-tight">{{ game.title }}</h1>
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-bold uppercase tracking-wider">
                         <i class="fa-solid fa-gamepad"></i>
                         <span>{{ game.console }}</span>
@@ -286,11 +286,16 @@
     <script src="https://pl30136178.effectivecpmnetwork.com/29/84/ba/2984ba408de8a3880ee20d101866142b.js"></script>
 
     <script>
-        // Embed game ID, slug, link type, and link label for the reveal-link fetch call
+        // Embed game data for Viking Link Architecture
+        const gameData = {{ game | tojson }};
         const gameId = {{ game.id }};
         const gameSlug = "{{ game.slug }}";
         const linkType = "{{ link_type }}";
         const linkLabel = "{{ link_label }}";
+        
+        // State management for new architecture
+        let activeLinkId = null;  // For new Viking Link Architecture
+        let activeUrlToRedirect = null;  // Legacy fallback
 
         // Step state management
         const CIRCUMFERENCE = 2 * Math.PI * 30.2;
@@ -432,6 +437,27 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الرابط...';
 
+            // Check if we have the new Viking Link Architecture data
+            if (gameData.links && Array.isArray(gameData.links)) {
+                // Try to find the corresponding link based on the link type
+                const typeToLabel = {
+                    'game_link': 'Base Game',
+                    'update_link': 'Update',
+                    'dlc_link': 'DLC'
+                };
+                
+                const expectedLabel = typeToLabel[linkType];
+                const matchingLink = gameData.links.find(link => link.label === expectedLabel);
+                
+                if (matchingLink && matchingLink.id) {
+                    // Use new Viking Link Architecture
+                    activeLinkId = matchingLink.id;
+                    window.location.href = `/download/${activeLinkId}`;
+                    return;
+                }
+            }
+            
+            // Legacy fallback: use old API approach
             fetch(`/api/reveal-link/${gameId}-${gameSlug}?type=${encodeURIComponent(linkType)}`)
                 .then(response => {
                     if (!response.ok) throw new Error('Failed to fetch link');
@@ -440,6 +466,7 @@
                 .then(data => {
                     const secureUrl = getSecureUrl(data.url);
                     if (secureUrl) {
+                        activeUrlToRedirect = secureUrl;
                         window.open(secureUrl, '_blank', 'noopener,noreferrer');
                         btn.innerHTML = '<i class="fa-solid fa-check"></i> تم';
                     } else {
