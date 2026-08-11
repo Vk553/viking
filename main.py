@@ -1,34 +1,40 @@
-import psycopg2
-import psycopg2.extras
 import os
-from dotenv import load_dotenv
-load_dotenv()
 import math
 import time
 import threading
 import re
 import json
 import logging
+import urllib.parse
+import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator, Field
+from curl_cffi import requests
+
 from indexnow import submit_urls_to_indexnow
 
+# Load environment variables
+load_dotenv()
 # ==========================================
 # 1. الإعدادات العامة والثوابت
 # ==========================================
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_production")
 security_scheme = HTTPBearer()
-SITE_NAME = "Viking"
+SITE_NAME = "VK Store"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -87,6 +93,260 @@ def get_db_connection():
         raise RuntimeError("DATABASE_URL environment variable is not set.")
     conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
+
+
+# ==========================================
+# PostgreSQL Advisory Lock Helpers (Optimized)
+# ==========================================
+def acquire_advisory_lock(conn, sub_id: int) -> bool:
+    """
+    Acquire a PostgreSQL session-level advisory lock for the given anker_sub_id.
+    Blocks until lock is acquired. Returns True if successful, False on error.
+    """
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_lock(%s)", (sub_id,))
+        return True
+    except Exception as e:
+        logging.error(f"Failed to acquire advisory lock for sub_id {sub_id}: {e}")
+        return False
+
+
+def release_advisory_lock(conn, sub_id: int) -> bool:
+    """
+    Release a PostgreSQL session-level advisory lock for the given anker_sub_id.
+    Returns True if lock was actually released, False otherwise.
+    """
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_unlock(%s)", (sub_id,))
+            result = cursor.fetchone()
+            # PostgreSQL returns a tuple e.g. (True,) or (False,)
+            released = result[0] if result else False
+
+            if not released:
+                logging.warning(f"Advisory lock for sub_id {sub_id} was not held by this session.")
+            return released
+    except Exception as e:
+        logging.error(f"Failed to release advisory lock for sub_id {sub_id}: {e}")
+        return False
+
+
+# ==========================================
+# AnkerGames Resolver Service
+# ==========================================
+async def resolve_pc_link(sub_id: int) -> Optional[str]:
+    """
+    Asynchronously resolve the AnkerGames download URL for a given sub_id.
+    
+    Steps:
+    1. GET recent-updates page to extract CSRF token
+    2. POST to generate-download-url endpoint with CSRF token
+    3. Parse response to get download_url
+    4. GET download_url and extract encrypted link using regex
+    5. Decrypt URL using urllib.parse.unquote
+    
+    Returns: The resolved tunnel5 URL or None if resolution fails.
+    """
+    max_retries = 3
+    base_delay = 1  # seconds
+    
+    print(f"[SERVER RESOLVER] Starting resolution for sub_id {sub_id}")
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"[SERVER RESOLVER] Attempt {attempt + 1}/{max_retries} for sub_id {sub_id}")
+            async with requests.AsyncSession(impersonate="chrome120") as session:
+                # Step 1: Extract CSRF token
+                timestamp = int(time.time())
+                csrf_url = f"https://ankergames.net/recent-updates?_t={timestamp}"
+                
+                print(f"[SERVER RESOLVER] Fetching CSRF token from {csrf_url}")
+                csrf_response = await session.get(csrf_url, timeout=12)
+                csrf_response.raise_for_status()
+                
+                # Extract CSRF token from meta tag
+                csrf_match = re.search(r'<meta name="csrf-token" content="([^"]+)"', csrf_response.text)
+                if not csrf_match:
+                    logging.error(f"Failed to extract CSRF token for sub_id {sub_id}")
+                    print(f"[SERVER RESOLVER] Failed to extract CSRF token for sub_id {sub_id}")
+                    return None
+                
+                csrf_token = csrf_match.group(1)
+                print(f"[SERVER RESOLVER] CSRF token extracted successfully")
+                
+                # Step 2: Generate download URL
+                generate_url = f"https://ankergames.net/generate-download-url/{sub_id}"
+                headers = {
+                    "X-CSRF-TOKEN": csrf_token,
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/json",
+                    "Referer": "https://ankergames.net/",
+                    "Origin": "https://ankergames.net"
+                }
+                payload = {"g-recaptcha-response": "development-mode"}
+                
+                print(f"[SERVER RESOLVER] Generating download URL at {generate_url}")
+                generate_response = await session.post(
+                    generate_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=12
+                )
+                generate_response.raise_for_status()
+                
+                generate_data = generate_response.json()
+                download_url = generate_data.get("download_url")
+                
+                if not download_url:
+                    logging.error(f"No download_url in response for sub_id {sub_id}")
+                    print(f"[SERVER RESOLVER] No download_url in response for sub_id {sub_id}")
+                    return None
+                
+                print(f"[SERVER RESOLVER] Generated download URL: {download_url}")
+                
+                # Step 3: Extract encrypted link from download page
+                print(f"[SERVER RESOLVER] Fetching download page to extract encrypted link")
+                download_response = await session.get(download_url, timeout=12)
+                download_response.raise_for_status()
+                
+                # Extract encrypted link using regex
+                encrypted_match = re.search(r"downloadPage\('([^']+)'", download_response.text)
+                if not encrypted_match:
+                    logging.error(f"Failed to extract encrypted link for sub_id {sub_id}")
+                    print(f"[SERVER RESOLVER] Failed to extract encrypted link for sub_id {sub_id}")
+                    return None
+                
+                encrypted_url = encrypted_match.group(1)
+                print(f"[SERVER RESOLVER] Encrypted URL extracted: {encrypted_url[:50]}...")
+                
+                # Step 4: Decrypt URL
+                final_url = urllib.parse.unquote(encrypted_url)
+                
+                logging.info(f"Successfully resolved link for sub_id {sub_id}")
+                print(f"[SERVER RESOLVER] Successfully resolved sub_id {sub_id} -> {final_url}")
+                return final_url
+                
+        except requests.exceptions.RequestException as e:
+            logging.warning(f"Attempt {attempt + 1}/{max_retries} failed for sub_id {sub_id}: {e}")
+            print(f"[SERVER RESOLVER] Attempt {attempt + 1}/{max_retries} failed for sub_id {sub_id}: {e}")
+            if attempt < max_retries - 1:
+                # Exponential backoff
+                delay = base_delay * (2 ** attempt)
+                await asyncio.sleep(delay)
+            else:
+                logging.error(f"All retries exhausted for sub_id {sub_id}")
+                print(f"[SERVER RESOLVER] All retries exhausted for sub_id {sub_id}")
+                return None
+        except Exception as e:
+            logging.error(f"Unexpected error resolving link for sub_id {sub_id}: {e}")
+            print(f"[SERVER RESOLVER] Unexpected error resolving link for sub_id {sub_id}: {e}")
+            return None
+    
+    print(f"[SERVER RESOLVER] Resolution failed for sub_id {sub_id} after all attempts")
+    return None
+
+
+# ==========================================
+# Game Link Refresh Logic with Double-Checked Locking
+# ==========================================
+async def get_or_refresh_game_link(conn, link_id: int) -> Optional[str]:
+    """
+    Core lazy-refresh logic for game links with double-checked locking pattern.
+    
+    Args:
+        conn: Database connection
+        link_id: ID of the game_link record
+        
+    Returns:
+        The cached URL (either existing or freshly resolved), or None if resolution fails
+    """
+    cursor = conn.cursor()
+    try:
+        # Step 1: Query game_links table by link_id
+        cursor.execute("""
+            SELECT id, game_id, label, anker_sub_id, cached_url, 
+                   resolver_type, expires_at
+            FROM game_links 
+            WHERE id = %s
+        """, (link_id,))
+        
+        link = cursor.fetchone()
+        
+        if not link:
+            logging.error(f"Game link {link_id} not found")
+            return None
+        
+        # Step 2: If static link or no anker_sub_id, return cached_url instantly
+        if link['resolver_type'] == 'static' or link['anker_sub_id'] is None:
+            return link['cached_url']
+        
+        # Step 3: Dynamic link - check expiration
+        anker_sub_id = link['anker_sub_id']
+        
+        # Check if cached_url is valid and not expired (14-hour TTL)
+        if link['cached_url'] and link['expires_at']:
+            cursor.execute("SELECT NOW()")
+            current_time = cursor.fetchone()['now']
+            if link['expires_at'] > current_time:
+                return link['cached_url']
+        
+        # Step 4: Link is expired or missing - acquire advisory lock
+        acquire_advisory_lock(conn, anker_sub_id)
+        
+        try:
+            # Step 5: Double-checked locking - re-query after acquiring lock
+            cursor.execute("""
+                SELECT cached_url, expires_at
+                FROM game_links 
+                WHERE id = %s
+            """, (link_id,))
+            
+            refreshed_link = cursor.fetchone()
+            
+            # If another request refreshed it while we were waiting, return the fresh URL
+            if refreshed_link and refreshed_link['cached_url'] and refreshed_link['expires_at']:
+                cursor.execute("SELECT NOW()")
+                current_time = cursor.fetchone()['now']
+                if refreshed_link['expires_at'] > current_time:
+                    logging.info(f"Link {link_id} was refreshed by another request")
+                    return refreshed_link['cached_url']
+            
+            # Step 6: Resolve the link using AnkerGames resolver
+            print(f"[SERVER RESOLVER] Starting resolution for link_id {link_id}, sub_id {anker_sub_id}")
+            resolved_url = await resolve_pc_link(anker_sub_id)
+            print(f"[SERVER RESOLVER] Sub ID: {anker_sub_id} -> Generated URL: {resolved_url}")
+            
+            if resolved_url:
+                # Step 7: Update game_links with new URL and expiration
+                cursor.execute("""
+                    UPDATE game_links 
+                    SET cached_url = %s,
+                        expires_at = NOW() + INTERVAL '1 minute',
+                        updated_at = NOW()
+                    WHERE id = %s
+                """, (resolved_url, link_id))
+                
+                conn.commit()
+                logging.info(f"Successfully refreshed link {link_id} for sub_id {anker_sub_id}")
+                print(f"[SERVER RESOLVER] Successfully updated link {link_id} in database")
+                return resolved_url
+            else:
+                logging.error(f"Failed to resolve link {link_id} for sub_id {anker_sub_id}")
+                print(f"[SERVER RESOLVER] Failed to resolve link {link_id} for sub_id {anker_sub_id}")
+                # Return old cached URL even if expired as fallback
+                return link['cached_url'] if link['cached_url'] else None
+                
+        finally:
+            # Step 8: Always release the advisory lock
+            release_advisory_lock(conn, anker_sub_id)
+            
+    except Exception as e:
+        logging.error(f"Error in get_or_refresh_game_link for link_id {link_id}: {e}")
+        print(f"[SERVER RESOLVER] Exception in get_or_refresh_game_link for link_id {link_id}: {e}")
+        return None
+    finally:
+        cursor.close()
 
 
 def slugify(title: str, console: str) -> str:
@@ -315,6 +575,8 @@ def init_db():
         "extra_5_url": "TEXT",
         "region": "TEXT",
         "game_code": "TEXT",
+        "requirements": "TEXT",
+        "installation_guide": "TEXT",
         # ── ORIGINAL URL COLUMNS (upgrade) ────────────────────
         "game_link_original": "TEXT",
         "update_link_original": "TEXT",
@@ -337,8 +599,15 @@ def init_db():
 
         if cursor.fetchone() is None:
             cursor.execute(f"ALTER TABLE games ADD COLUMN {col_name} {col_def}")
+            conn.commit()  # <--- CRITICAL FOR NEON POSTGRESQL
+            print(f"[MIGRATION]: Added column {col_name} to games table")
 
     conn.commit()
+
+    # Force verify Neon columns on startup
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'games';")
+    existing_cols = [row[0] if isinstance(row, tuple) else row['column_name'] for row in cursor.fetchall()]
+    print(f"[NEON DB COLUMNS]: {existing_cols}")
 
     # Create IndexNow log table for deduplication
     cursor.execute("""
@@ -353,6 +622,32 @@ def init_db():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_indexnow_log_url_submitted 
         ON indexnow_log (url, submitted_at)
+    """)
+
+    # Create game_links table for Viking Link Architecture
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_links (
+            id SERIAL PRIMARY KEY,
+            game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+            label TEXT NOT NULL,
+            anker_sub_id INTEGER,
+            cached_url TEXT NOT NULL,
+            resolver_type TEXT NOT NULL DEFAULT 'static',
+            expires_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create indexes for game_links
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_game_links_game_id 
+        ON game_links (game_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_game_links_anker_sub_id 
+        ON game_links (anker_sub_id)
     """)
 
     conn.commit()
@@ -427,6 +722,8 @@ class GameBase(BaseModel):
     console: str
     cover_image: Optional[str] = ""
     description: Optional[str] = ""
+    requirements: Optional[str] = ""
+    installation_guide: Optional[str] = ""
     size: Optional[str] = ""
     version: Optional[str] = ""
     youtube_link: Optional[str] = ""
@@ -490,11 +787,81 @@ class GameBase(BaseModel):
 
 
 class GameCreate(GameBase):
-    pass
+    links: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 
 class GameUpdate(GameBase):
+    links: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+
+
+# ==========================================
+# GameLink Models for Viking Link Architecture
+# ==========================================
+class GameLinkBase(BaseModel):
+    label: str
+    anker_sub_id: Optional[int] = None
+    cached_url: str
+    resolver_type: str = "static"
+    expires_at: Optional[datetime] = None
+
+    @field_validator('resolver_type')
+    @classmethod
+    def validate_resolver_type(cls, v):
+        if v not in ("ankergames", "static"):
+            raise ValueError("resolver_type must be 'ankergames' or 'static'")
+        return v
+
+    @field_validator('cached_url')
+    @classmethod
+    def validate_cached_url(cls, v):
+        if v and v.strip():
+            v = v.strip()
+            if not (v.startswith('http://') or v.startswith('https://')):
+                raise ValueError(
+                    f"رابط غير آمن: '{v}'. يجب أن يبدأ بـ http:// أو https://"
+                )
+        return v
+
+    @model_validator(mode='before')
+    @classmethod
+    def auto_set_resolver_type(cls, data):
+        """
+        Dynamic resolver type helper.
+        Automatically set resolver_type based on anker_sub_id presence.
+        """
+        if isinstance(data, dict):
+            anker_sub_id = data.get('anker_sub_id')
+            if anker_sub_id is not None and anker_sub_id > 0:
+                data['resolver_type'] = 'ankergames'
+            else:
+                data['resolver_type'] = 'static'
+        return data
+
+
+def set_resolver_type_from_anker(anker_sub_id: Optional[int]) -> str:
+    """
+    Dynamic resolver type helper function.
+    Automatically set resolver_type based on anker_sub_id presence.
+    Use this when constructing GameLink instances programmatically.
+    """
+    if anker_sub_id is not None and anker_sub_id > 0:
+        return "ankergames"
+    return "static"
+
+
+class GameLinkCreate(GameLinkBase):
+    game_id: int
+
+
+class GameLinkUpdate(GameLinkBase):
     pass
+
+
+class GameLinkResponse(GameLinkBase):
+    id: int
+    game_id: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class GameResponse(GameBase):
@@ -502,6 +869,7 @@ class GameResponse(GameBase):
     created_at: datetime
     slug: str
     updated_at: datetime
+    links: List[GameLinkResponse] = []
 
 
 # ==========================================
@@ -663,11 +1031,35 @@ def get_game_by_id(id: int):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM games WHERE id = %s", (id,))
     row = cursor.fetchone()
-    conn.close()
-
+    
     if not row:
+        conn.close()
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
-
+    
+    # Fetch associated game_links
+    cursor.execute("""
+        SELECT id, label, resolver_type
+        FROM game_links 
+        WHERE game_id = %s
+        ORDER BY id ASC
+    """, (id,))
+    
+    links = cursor.fetchall()
+    
+    # Format links for frontend consumption
+    formatted_links = []
+    for link in links:
+        formatted_links.append({
+            "id": link['id'],
+            "label": link['label'],
+            "download_url": f"/download/{link['id']}",
+            "resolver_type": link['resolver_type']
+        })
+    
+    # Add links to the game response
+    row['links'] = formatted_links
+    
+    conn.close()
     return row
 
 
@@ -702,6 +1094,7 @@ def reveal_download_link(id_slug: str, type: str = Query("game_link")):
 
 @app.post("/api/games", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_token)])
 def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Request):
+    print("[DEBUG Backend Received]:", game.requirements, game.installation_guide)
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -711,17 +1104,17 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
 
     query = """
         INSERT INTO games (
-            title, console, cover_image, description, size,
+            title, console, cover_image, description, requirements, installation_guide, size,
             version, youtube_link, game_link, game_link_original, update_link, update_link_original, dlc_link, dlc_link_original, is_arabic,
             extra_1_label, extra_1_url, extra_1_url_original, extra_2_label, extra_2_url, extra_2_url_original,
             extra_3_label, extra_3_url, extra_3_url_original, extra_4_label, extra_4_url, extra_4_url_original,
             extra_5_label, extra_5_url, extra_5_url_original, region, game_code,
             password, slug, updated_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
-        game.title, game.console, game.cover_image, game.description, game.size,
+        game.title, game.console, game.cover_image, game.description, game.requirements, game.installation_guide, game.size,
         game.version, game.youtube_link, game.game_link, game.game_link_original, game.update_link, game.update_link_original, game.dlc_link, game.dlc_link_original,
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
@@ -729,8 +1122,46 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
         game.password, slug, datetime.now()
     )
 
-    cursor.execute(query, values)
+    try:
+        cursor.execute(query, values)
+        conn.commit()  # <--- CRITICAL FOR NEON POSTGRESQL
+        print("[SUCCESS]: Game saved successfully to Neon DB!")
+    except Exception as e:
+        conn.rollback()  # Rollback on error to avoid stuck transactions
+        print(f"[NEON DB ERROR]: Failed to execute INSERT query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    
     new_game_id = cursor.fetchone()["id"]
+
+    # Insert game_links if provided
+    if game.links and len(game.links) > 0:
+        print(f"[DEBUG LINKS] Inserting {len(game.links)} links for game_id {new_game_id}")
+        for link in game.links:
+            try:
+                label = link.get("label", "")
+                cached_url = link.get("cached_url", "")
+                anker_sub_id = link.get("anker_sub_id")
+                resolver_type = link.get("resolver_type", "static")
+                
+                # Set expires_at for ankergames links
+                if resolver_type == "ankergames":
+                    expires_at = "NOW() + INTERVAL '14 hours'"
+                else:
+                    expires_at = "NULL"
+                
+                insert_link_query = """
+                    INSERT INTO game_links (game_id, label, cached_url, anker_sub_id, resolver_type, expires_at)
+                    VALUES (%s, %s, %s, %s, %s, {expires_at})
+                """.format(expires_at=expires_at)
+                
+                cursor.execute(insert_link_query, (new_game_id, label, cached_url, anker_sub_id, resolver_type))
+                print(f"[DEBUG LINKS] Inserted link: label={label}, resolver_type={resolver_type}")
+            except Exception as e:
+                print(f"[ERROR LINKS] Failed to insert link: {e}")
+                # Continue with other links even if one fails
+        
+        conn.commit()  # Commit all link insertions
+        print(f"[SUCCESS LINKS] All links inserted successfully for game_id {new_game_id}")
 
     # If slug was duplicate, update it with ID suffix
     cursor.execute("SELECT slug FROM games WHERE id = %s", (new_game_id,))
@@ -742,8 +1173,7 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
             # Update slug with ID suffix to ensure uniqueness
             unique_slug = f"{base_slug}-{new_game_id}"
             cursor.execute("UPDATE games SET slug = %s WHERE id = %s", (unique_slug, new_game_id))
-
-    conn.commit()
+            conn.commit()  # Commit slug update if it occurred
 
     cursor.execute("SELECT * FROM games WHERE id = %s", (new_game_id,))
     created_game = cursor.fetchone()
@@ -766,6 +1196,7 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
 
 @app.put("/api/games/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(verify_token)])
 def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, request: Request):
+    print("[DEBUG Backend Received (UPDATE)]:", game.requirements, game.installation_guide)
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -792,7 +1223,7 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
 
     query = """
         UPDATE games SET
-            title = %s, console = %s, cover_image = %s, description = %s, size = %s,
+            title = %s, console = %s, cover_image = %s, description = %s, requirements = %s, installation_guide = %s, size = %s,
             version = %s, youtube_link = %s, game_link = %s, game_link_original = %s, update_link = %s, update_link_original = %s, dlc_link = %s, dlc_link_original = %s,
             is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_1_url_original = %s, extra_2_label = %s, extra_2_url = %s, extra_2_url_original = %s,
             extra_3_label = %s, extra_3_url = %s, extra_3_url_original = %s, extra_4_label = %s, extra_4_url = %s, extra_4_url_original = %s,
@@ -801,7 +1232,7 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
         WHERE id = %s
     """
     values = (
-        game.title, game.console, game.cover_image, game.description, game.size,
+        game.title, game.console, game.cover_image, game.description, game.requirements, game.installation_guide, game.size,
         game.version, game.youtube_link, game.game_link, game.game_link_original, game.update_link, game.update_link_original, game.dlc_link, game.dlc_link_original,
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
@@ -809,8 +1240,57 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
         game.password, new_slug, datetime.now(), id
     )
 
-    cursor.execute(query, values)
-    conn.commit()
+    try:
+        cursor.execute(query, values)
+        conn.commit()  # <--- CRITICAL FOR NEON POSTGRESQL
+        print("[SUCCESS]: Game updated successfully to Neon DB!")
+    except Exception as e:
+        conn.rollback()  # Rollback on error to avoid stuck transactions
+        print(f"[NEON DB ERROR]: Failed to execute UPDATE query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    # Handle game_links update if provided
+    if game.links is not None:
+        if len(game.links) > 0:
+            print(f"[DEBUG LINKS] Updating {len(game.links)} links for game_id {id}")
+            
+            # Delete existing links for this game
+            cursor.execute("DELETE FROM game_links WHERE game_id = %s", (id,))
+            print(f"[DEBUG LINKS] Deleted existing links for game_id {id}")
+            
+            # Insert new links
+            for link in game.links:
+                try:
+                    label = link.get("label", "")
+                    cached_url = link.get("cached_url", "")
+                    anker_sub_id = link.get("anker_sub_id")
+                    resolver_type = link.get("resolver_type", "static")
+                    
+                    # Set expires_at for ankergames links
+                    if resolver_type == "ankergames":
+                        expires_at = "NOW() + INTERVAL '14 hours'"
+                    else:
+                        expires_at = "NULL"
+                    
+                    insert_link_query = """
+                        INSERT INTO game_links (game_id, label, cached_url, anker_sub_id, resolver_type, expires_at)
+                        VALUES (%s, %s, %s, %s, %s, {expires_at})
+                    """.format(expires_at=expires_at)
+                    
+                    cursor.execute(insert_link_query, (id, label, cached_url, anker_sub_id, resolver_type))
+                    print(f"[DEBUG LINKS] Inserted link: label={label}, resolver_type={resolver_type}")
+                except Exception as e:
+                    print(f"[ERROR LINKS] Failed to insert link: {e}")
+                    # Continue with other links even if one fails
+            
+            conn.commit()  # Commit all link operations
+            print(f"[SUCCESS LINKS] All links updated successfully for game_id {id}")
+        else:
+            # Empty links array provided - delete all existing links
+            print(f"[DEBUG LINKS] Empty links array provided, deleting all links for game_id {id}")
+            cursor.execute("DELETE FROM game_links WHERE game_id = %s", (id,))
+            conn.commit()
+            print(f"[SUCCESS LINKS] All links deleted for game_id {id}")
 
     cursor.execute("SELECT * FROM games WHERE id = %s", (id,))
     updated_game = cursor.fetchone()
@@ -927,10 +1407,35 @@ def information_page(id_slug: str, request: Request):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM games WHERE id = %s", (game_id,))
     game = cursor.fetchone()
-    conn.close()
-
+    
     if not game:
+        conn.close()
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
+    
+    # Fetch associated game_links
+    cursor.execute("""
+        SELECT id, label, resolver_type
+        FROM game_links 
+        WHERE game_id = %s
+        ORDER BY id ASC
+    """, (game_id,))
+    
+    links = cursor.fetchall()
+    
+    # Format links for frontend consumption
+    formatted_links = []
+    for link in links:
+        formatted_links.append({
+            "id": link['id'],
+            "label": link['label'],
+            "download_url": f"/download/{link['id']}",
+            "resolver_type": link['resolver_type']
+        })
+    
+    # Add links to the game dict
+    game['links'] = formatted_links
+    
+    conn.close()
 
     # Build SEO metadata
     base_url = get_base_url(request)
@@ -948,8 +1453,10 @@ def information_page(id_slug: str, request: Request):
     }
     json_ld_json = json.dumps(json_ld_data, default=str).replace('<', '\\u003c')
 
-    # Convert game dict to JSON for inline embedding
-    game_json = json.dumps(game, default=str).replace('<', '\\u003c')
+    # Convert game dict to JSON for inline embedding (excluding description for cleaner JSON)
+    game_dict_for_embed = dict(game)
+    game_dict_for_embed.pop('description', None)
+    game_json = json.dumps(game_dict_for_embed, default=str).replace('<', '\\u003c')
 
     rendered = templates.TemplateResponse(
         request=request,
@@ -986,10 +1493,35 @@ def game_page(id_slug: str, request: Request):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM games WHERE id = %s", (game_id,))
     game = cursor.fetchone()
-    conn.close()
-
+    
     if not game:
+        conn.close()
         raise HTTPException(status_code=404, detail="اللعبة غير موجودة في قاعدة البيانات")
+    
+    # Fetch associated game_links
+    cursor.execute("""
+        SELECT id, label, resolver_type
+        FROM game_links 
+        WHERE game_id = %s
+        ORDER BY id ASC
+    """, (game_id,))
+    
+    links = cursor.fetchall()
+    
+    # Format links for frontend consumption
+    formatted_links = []
+    for link in links:
+        formatted_links.append({
+            "id": link['id'],
+            "label": link['label'],
+            "download_url": f"/download/{link['id']}",
+            "resolver_type": link['resolver_type']
+        })
+    
+    # Add links to the game dict
+    game['links'] = formatted_links
+    
+    conn.close()
 
     # Build SEO metadata
     base_url = get_base_url(request)
@@ -1028,6 +1560,102 @@ def game_page(id_slug: str, request: Request):
     return Response(content=rendered_body, media_type="text/html", headers={"Cache-Control": "public, max-age=600"})
 
 
+# ==========================================
+# Viking Link Architecture - Download Endpoint
+# ==========================================
+@app.get("/download/{link_id}")
+async def download_game_link(link_id: int, force_refresh: bool = False):
+    """
+    Redirect endpoint for game download links with lazy-refresh logic.
+    
+    Args:
+        link_id: ID of the game_link record
+        force_refresh: If True, bypass cache and force refresh for dynamic links
+        
+    Returns:
+        HTTP 302 redirect to the actual download URL
+    """
+    conn = get_db_connection()
+    
+    try:
+        if force_refresh:
+            # Force refresh logic: bypass cache for dynamic links
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, anker_sub_id, resolver_type, cached_url
+                FROM game_links 
+                WHERE id = %s
+            """, (link_id,))
+            
+            link = cursor.fetchone()
+            cursor.close()
+            
+            if not link:
+                raise HTTPException(
+                    status_code=404, 
+                    detail="Download link not found"
+                )
+            
+            # For static links, just return cached URL
+            if link['resolver_type'] == 'static' or link['anker_sub_id'] is None:
+                download_url = link['cached_url']
+            else:
+                # Force refresh dynamic link with advisory lock
+                print(f"[SERVER RESOLVER] Force refresh for link_id {link_id}, sub_id {link['anker_sub_id']}")
+                acquire_advisory_lock(conn, link['anker_sub_id'])
+                try:
+                    resolved_url = await resolve_pc_link(link['anker_sub_id'])
+                    print(f"[SERVER RESOLVER] Sub ID: {link['anker_sub_id']} -> Generated URL: {resolved_url}")
+                    if resolved_url:
+                        # Update the cached URL and expiration
+                        cursor2 = conn.cursor()
+                        cursor2.execute("""
+                            UPDATE game_links 
+                            SET cached_url = %s,
+                                expires_at = NOW() + INTERVAL '14 hours',
+                                updated_at = NOW()
+                            WHERE id = %s
+                        """, (resolved_url, link_id))
+                        conn.commit()
+                        cursor2.close()
+                        print(f"[SERVER RESOLVER] Successfully updated link {link_id} in database (force refresh)")
+                        download_url = resolved_url
+                    else:
+                        # Fallback to cached URL if resolution fails
+                        print(f"[SERVER RESOLVER] Force refresh failed, using cached URL for link_id {link_id}")
+                        download_url = link['cached_url']
+                except Exception as e:
+                    logging.error(f"Error during force refresh for link_id {link_id}: {e}")
+                    print(f"[SERVER RESOLVER] Exception during force refresh: {e}")
+                    download_url = link['cached_url']
+                finally:
+                    release_advisory_lock(conn, link['anker_sub_id'])
+        else:
+            # Normal lazy-refresh logic
+            download_url = await get_or_refresh_game_link(conn, link_id)
+        
+        if download_url:
+            # Return HTTP 302 redirect - zero bandwidth consumption on Render
+            return RedirectResponse(url=download_url, status_code=302)
+        else:
+            raise HTTPException(
+                status_code=503, 
+                detail="Download link is currently unavailable. Please try again later."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error in download endpoint for link_id {link_id}: {e}")
+        print(f"[SERVER RESOLVER] Exception in download endpoint for link_id {link_id}: {e}")
+        raise HTTPException(
+            status_code=503, 
+            detail="Download link is currently unavailable. Please try again later."
+        )
+    finally:
+        conn.close()
+
+
 @app.get("/download-link/{id_slug}")
 def download_link_page(id_slug: str, request: Request, type: str = Query("game_link")):
     """Render the ad-gated 3-step download link page for ANY link type (game_link, update_link, dlc_link, extra_1_url..extra_5_url). Does NOT expose the actual download URL in page source."""
@@ -1062,6 +1690,30 @@ def download_link_page(id_slug: str, request: Request, type: str = Query("game_l
         "FROM games WHERE id = %s", (game_id,)
     )
     game = cursor.fetchone()
+    
+    # Fetch associated game_links for Viking Link Architecture
+    cursor.execute("""
+        SELECT id, label, resolver_type
+        FROM game_links 
+        WHERE game_id = %s
+        ORDER BY id ASC
+    """, (game_id,))
+    
+    links = cursor.fetchall()
+    
+    # Format links for template consumption
+    formatted_links = []
+    for link in links:
+        formatted_links.append({
+            "id": link['id'],
+            "label": link['label'],
+            "download_url": f"/download/{link['id']}",
+            "resolver_type": link['resolver_type']
+        })
+    
+    # Add links to the game dict
+    game['links'] = formatted_links
+    
     conn.close()
 
     if not game or not (game.get(type) and game[type].strip()):
