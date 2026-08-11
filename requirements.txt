@@ -5,3 +5,4 @@ jinja2
 httpx
 pydantic
 python-dotenv
+curl_cffi
