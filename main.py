@@ -34,7 +34,7 @@ load_dotenv()
 SECRET_TOKEN = os.getenv("VK_API_SECRET_TOKEN", "VK_SUPER_SECRET_2026")
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_production")
 security_scheme = HTTPBearer()
-SITE_NAME = "VK Store"
+SITE_NAME = "Viking"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
@@ -322,7 +322,7 @@ async def get_or_refresh_game_link(conn, link_id: int) -> Optional[str]:
                 cursor.execute("""
                     UPDATE game_links 
                     SET cached_url = %s,
-                        expires_at = NOW() + INTERVAL '1 minute',
+                        expires_at = NOW() + INTERVAL '14 hours',
                         updated_at = NOW()
                     WHERE id = %s
                 """, (resolved_url, link_id))
