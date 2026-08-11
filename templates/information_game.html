@@ -136,28 +136,32 @@
                             <span class="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-black text-xs uppercase">{{ game.console }}</span>
                         </div>
 
-                        <h1 class="text-2xl sm:text-3xl lg:text-2xl font-black text-white leading-tight lg:tracking-tight">{{ game.title }}</h1>
+                        <h1 class="text-2xl sm:text-3xl lg:text-5xl font-black text-white leading-tight lg:tracking-tight">{{ game.title }}</h1>
 
                         <!-- Full Description -->
                         <p class="text-sm md:text-base text-gray-300 mt-4 lg:mt-6 leading-relaxed">{{ game.description or 'لا يوجد وصف متاح لهذه اللعبة.' }}</p>
 
                         {% if game.requirements and game.requirements.strip() and game.requirements.strip() != 'غير محدد' %}
                         <div class="mt-6 bg-white/5 rounded-2xl border border-white/10 p-5">
-                            <h3 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
                                 <i class="fa-solid fa-microchip"></i>
-                                متطلبات التشغيل
+                                <span>متطلبات التشغيل</span>
                             </h3>
-                            <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{{ game.requirements }}</p>
+                            <div dir="ltr" class="text-left text-sm text-gray-300 formatted-spec-box" data-raw-text="{{ game.requirements }}">
+                                <p class="whitespace-pre-line">{{ game.requirements }}</p>
+                            </div>
                         </div>
                         {% endif %}
 
                         {% if game.installation_guide and game.installation_guide.strip() and game.installation_guide.strip() != 'غير محدد' %}
                         <div class="mt-4 bg-white/5 rounded-2xl border border-white/10 p-5">
-                            <h3 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
                                 <i class="fa-solid fa-circle-info"></i>
-                                دليل التثبيت والملاحظات
+                                <span>دليل التثبيت والملاحظات</span>
                             </h3>
-                            <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{{ game.installation_guide }}</p>
+                            <div dir="ltr" class="text-left text-sm text-gray-300 formatted-spec-box" data-raw-text="{{ game.installation_guide }}">
+                                <p class="whitespace-pre-line">{{ game.installation_guide }}</p>
+                            </div>
                         </div>
                         {% endif %}
 
@@ -244,6 +248,40 @@
     <script src="https://pl30153598.effectivecpmnetwork.com/df/a3/36/dfa336b5b295cd476b2e7b2a85312b55.js"></script>
 
     {% include "partials/_image_proxy.html" %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.formatted-spec-box').forEach(box => {
+                const rawText = box.getAttribute('data-raw-text');
+                if (!rawText) return;
+
+                // Split text by |, ▪, or newlines
+                const parts = rawText.split(/[|▪\n]/).map(p => p.trim()).filter(p => p.length > 0);
+                
+                if (parts.length <= 1) return; // Keep standard paragraph if no separators found
+
+                const ul = document.createElement('ul');
+                ul.className = 'space-y-2 list-none p-0 m-0';
+
+                parts.forEach(part => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-start gap-2.5 bg-black/20 p-2.5 rounded-xl border border-white/5 hover:border-cyan-500/20 transition-colors';
+                    
+                    // Highlight bracket headers like [Steps] or [Important Notes]
+                    let formattedPart = part.replace(/(\[[^\]]+\])/g, '<span class="text-cyan-400 font-bold block mb-1">$1</span>');
+
+                    li.innerHTML = `
+                        <i class="fa-solid fa-angle-right text-cyan-400 mt-1 shrink-0 text-xs"></i>
+                        <span class="leading-relaxed flex-1">${formattedPart}</span>
+                    `;
+                    ul.appendChild(li);
+                });
+
+                box.innerHTML = '';
+                box.appendChild(ul);
+            });
+        });
+    </script>
 
 </body>
 </html>
