@@ -559,6 +559,8 @@ def init_db():
 
     columns_to_add = {
         "is_arabic": "INTEGER DEFAULT 0",
+        "is_ps2_to_ps4": "INTEGER DEFAULT 0",
+        "is_emulator": "INTEGER DEFAULT 0",
         "extra_1_label": "TEXT",
         "extra_1_url": "TEXT",
         "extra_2_label": "TEXT",
@@ -734,6 +736,8 @@ class GameBase(BaseModel):
     dlc_link: Optional[str] = ""
     dlc_link_original: Optional[str] = ""
     is_arabic: Optional[int] = 0
+    is_ps2_to_ps4: Optional[int] = None
+    is_emulator: Optional[int] = None
     extra_1_label: Optional[str] = ""
     extra_1_url: Optional[str] = ""
     extra_1_url_original: Optional[str] = ""
@@ -765,6 +769,13 @@ class GameBase(BaseModel):
                 f"المنصة '{v}' غير مدعومة. المنصات المتاحة هي: {', '.join(SUPPORTED_CONSOLES)}"
             )
         return v.lower()
+
+    @field_validator('is_ps2_to_ps4', 'is_emulator')
+    @classmethod
+    def validate_special_flags(cls, v):
+        if v is not None and v not in (0, 1):
+            raise ValueError("القيمة يجب أن تكون 0 أو 1 فقط")
+        return v
 
     @field_validator('is_arabic')
     @classmethod
@@ -898,6 +909,8 @@ def health_check():
 def get_games(
         console: Optional[str] = Query(None),
         is_arabic: Optional[int] = Query(None),
+        is_ps2_to_ps4: Optional[int] = Query(None),
+        is_emulator: Optional[int] = Query(None),
         search: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(12, ge=1, le=100),
@@ -916,7 +929,14 @@ def get_games(
             detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
         )
 
-    cache_key = f"api_games:{console}:{is_arabic}:{search}:{page}:{limit}"
+    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator)):
+        if _flag_val is not None and _flag_val not in (0, 1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"قيمة {_flag_name} يجب أن تكون 0 أو 1 فقط"
+            )
+
+    cache_key = f"api_games:{console}:{is_arabic}:{is_ps2_to_ps4}:{is_emulator}:{search}:{page}:{limit}"
     cached_response = cache_get(cache_key)
     if cached_response is not None:
         return cached_response
@@ -935,6 +955,14 @@ def get_games(
         base_query += " AND is_arabic = %s"
         params.append(is_arabic)
 
+    if is_ps2_to_ps4 is not None:
+        base_query += " AND COALESCE(is_ps2_to_ps4, 0) = %s"
+        params.append(is_ps2_to_ps4)
+
+    if is_emulator is not None:
+        base_query += " AND COALESCE(is_emulator, 0) = %s"
+        params.append(is_emulator)
+
     if search:
         base_query += " AND title ILIKE %s"
         params.append(f"%{search}%")
@@ -945,7 +973,7 @@ def get_games(
     total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
     offset = (page - 1) * limit
-    data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
+    data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, is_ps2_to_ps4, is_emulator, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
     data_params = params + [limit, offset]
 
     cursor.execute(data_query, data_params)
@@ -971,6 +999,8 @@ def get_games(
 def get_games_admin(
         console: Optional[str] = Query(None),
         is_arabic: Optional[int] = Query(None),
+        is_ps2_to_ps4: Optional[int] = Query(None),
+        is_emulator: Optional[int] = Query(None),
         search: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(12, ge=1, le=100),
@@ -980,6 +1010,13 @@ def get_games_admin(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
         )
+
+    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator)):
+        if _flag_val is not None and _flag_val not in (0, 1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"قيمة {_flag_name} يجب أن تكون 0 أو 1 فقط"
+            )
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -994,6 +1031,14 @@ def get_games_admin(
     if is_arabic is not None:
         base_query += " AND is_arabic = %s"
         params.append(is_arabic)
+
+    if is_ps2_to_ps4 is not None:
+        base_query += " AND COALESCE(is_ps2_to_ps4, 0) = %s"
+        params.append(is_ps2_to_ps4)
+
+    if is_emulator is not None:
+        base_query += " AND COALESCE(is_emulator, 0) = %s"
+        params.append(is_emulator)
 
     if search:
         base_query += " AND title ILIKE %s"
@@ -1109,8 +1154,8 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
             extra_1_label, extra_1_url, extra_1_url_original, extra_2_label, extra_2_url, extra_2_url_original,
             extra_3_label, extra_3_url, extra_3_url_original, extra_4_label, extra_4_url, extra_4_url_original,
             extra_5_label, extra_5_url, extra_5_url_original, region, game_code,
-            password, slug, updated_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            password, slug, updated_at, is_ps2_to_ps4, is_emulator
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
@@ -1119,7 +1164,8 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
-        game.password, slug, datetime.now()
+        game.password, slug, datetime.now(),
+        game.is_ps2_to_ps4 or 0, game.is_emulator or 0
     )
 
     try:
@@ -1228,7 +1274,8 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
             is_arabic = %s, extra_1_label = %s, extra_1_url = %s, extra_1_url_original = %s, extra_2_label = %s, extra_2_url = %s, extra_2_url_original = %s,
             extra_3_label = %s, extra_3_url = %s, extra_3_url_original = %s, extra_4_label = %s, extra_4_url = %s, extra_4_url_original = %s,
             extra_5_label = %s, extra_5_url = %s, extra_5_url_original = %s, region = %s, game_code = %s,
-            password = %s, slug = %s, updated_at = %s
+            password = %s, slug = %s, updated_at = %s,
+            is_ps2_to_ps4 = COALESCE(%s, is_ps2_to_ps4), is_emulator = COALESCE(%s, is_emulator)
         WHERE id = %s
     """
     values = (
@@ -1237,7 +1284,7 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
-        game.password, new_slug, datetime.now(), id
+        game.password, new_slug, datetime.now(), game.is_ps2_to_ps4, game.is_emulator, id
     )
 
     try:
