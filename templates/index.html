@@ -213,9 +213,9 @@
             </div>
 
             <!-- Arabic sub-filter tab -->
-            <div class="sub-tab-row flex items-center justify-center gap-2 mt-3 md:mt-4 bg-white/[0.02] p-1 rounded-xl border border-white/5 w-fit mx-auto">
-                <button onclick="filterArabic(event, '')" class="sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm">كل الألعاب</button>
-                <button onclick="filterArabic(event, '1')" class="sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+            <div class="sub-tab-row flex flex-wrap items-center justify-center gap-2 mt-3 md:mt-4 bg-white/[0.02] p-1 rounded-xl border border-white/5 w-fit mx-auto">
+                <button data-sub="all" onclick="filterSubTab('all')" class="sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm">كل الألعاب</button>
+                <button data-sub="arabic" onclick="filterSubTab('arabic')" class="sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
                     <span>الألعاب المعربة</span>
                     <span class="md:hidden">🇸🇦</span>
                     <span class="hidden md:inline-flex items-center">
@@ -228,6 +228,12 @@
                              onerror="this.style.display='none'">
                     </span>
                 </button>
+
+                <!-- PS4 only: PS2 games playable on PS4 (games flagged is_ps2_to_ps4 = 1) -->
+                <button data-sub="ps2_to_ps4" onclick="filterSubTab('ps2_to_ps4')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">PS2 TO PS4</button>
+
+                <!-- PS4 + PS5: Emulators (games flagged is_emulator = 1) -->
+                <button data-sub="emulator" onclick="filterSubTab('emulator')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">Emulators</button>
             </div>
         </div>
     </header>
@@ -350,6 +356,7 @@
         const API_BASE_URL = "{{ request.base_url }}api/games";
         let activeConsole = "";
         let activeArabic = "";
+        let activeSpecial = "";   // "" | "ps2_to_ps4" | "emulator"
         let searchTimeout = null;
         let currentPage = 1;
         let isLoadingMore = false;
@@ -421,6 +428,8 @@
                 if (consoleType) url.searchParams.append('console', consoleType);
                 if (searchQuery) url.searchParams.append('search', searchQuery);
                 if (isArabic) url.searchParams.append('is_arabic', isArabic);
+                if (activeSpecial === 'ps2_to_ps4') url.searchParams.append('is_ps2_to_ps4', 1);
+                if (activeSpecial === 'emulator') url.searchParams.append('is_emulator', 1);
 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("فشل الاتصال بالـ API");
@@ -565,18 +574,50 @@
             });
             e.currentTarget.className = "filter-btn active px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 bg-cyan-400 text-black shadow-[0_0_12px_rgba(102,252,241,0.4)]";
 
+            updateSubTabs();   // show/hide PS2 TO PS4 / Emulators depending on the console
+
             currentPage = 1;
             hasMoreGames = true;
             fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic, false);
         }
 
-        function filterArabic(e, isArabicValue) {
-            activeArabic = isArabicValue;
-            const subButtons = document.querySelectorAll('.sub-tab-btn');
-            subButtons.forEach(btn => {
-                btn.className = "sub-tab-btn px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all";
+        // Which special sub-tabs are available for the selected console
+        function getAvailableSpecialTabs() {
+            const c = (activeConsole || '').toUpperCase();
+            return {
+                ps2_to_ps4: c === 'PS4',
+                emulator: c === 'PS4' || c === 'PS5'
+            };
+        }
+
+        // Re-draw the sub-tab row (visibility + active style) from the current state
+        function updateSubTabs() {
+            const avail = getAvailableSpecialTabs();
+            // If the selected special tab does not exist for this console, fall back to "all"
+            if (activeSpecial && !avail[activeSpecial]) activeSpecial = '';
+
+            const currentKey = activeSpecial || (activeArabic === '1' ? 'arabic' : 'all');
+
+            document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+                const key = btn.dataset.sub;
+                const isSpecial = key in avail;
+                btn.classList.toggle('hidden', isSpecial && !avail[key]);
+
+                const isActive = key === currentKey;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('font-bold', isActive);
+                btn.classList.toggle('bg-white/10', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('shadow-sm', isActive);
+                btn.classList.toggle('font-medium', !isActive);
+                btn.classList.toggle('text-gray-400', !isActive);
             });
-            e.currentTarget.className = "sub-tab-btn active px-4 py-1 rounded-lg text-xs font-bold transition-all bg-white/10 text-white shadow-sm";
+        }
+
+        function filterSubTab(key) {
+            activeArabic = (key === 'arabic') ? '1' : '';
+            activeSpecial = (key === 'ps2_to_ps4' || key === 'emulator') ? key : '';
+            updateSubTabs();
 
             currentPage = 1;
             hasMoreGames = true;
@@ -611,6 +652,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            updateSubTabs();
             if (!isServerRendered) fetchGames();
             initInfiniteScroll();
         });
