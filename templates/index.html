@@ -415,14 +415,83 @@
             return "https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/default.jpg";
         }
 
+        // ---- Resilient API fetching: cancel stale requests, retry, friendly error ----
+        let fetchController = null;
+        const loaderDefaultHTML = loader.innerHTML;
+
+        function sleep(ms, signal) {
+            return new Promise((resolve, reject) => {
+                const t = setTimeout(resolve, ms);
+                if (signal) {
+                    signal.addEventListener('abort', () => {
+                        clearTimeout(t);
+                        reject(new DOMException('Aborted', 'AbortError'));
+                    }, { once: true });
+                }
+            });
+        }
+
+        async function fetchWithRetry(url, signal) {
+            const MAX_ATTEMPTS = 3;
+            let lastError;
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                let delay = 1200 * attempt;
+                try {
+                    const res = await fetch(url, { signal });
+                    if (res.ok) return res;
+
+                    const err = new Error("HTTP " + res.status);
+                    err.status = res.status;
+                    // Client errors (400, 404...) will not improve by retrying
+                    if (res.status !== 429 && res.status < 500) throw err;
+                    // Rate limited: wait as the server asks and try only once more
+                    if (res.status === 429) {
+                        if (attempt >= 2) throw err;
+                        const retryAfter = parseInt(res.headers.get('Retry-After'), 10);
+                        delay = Math.min((isNaN(retryAfter) ? 5 : retryAfter) * 1000, 10000);
+                    }
+                    lastError = err;
+                } catch (e) {
+                    if (e.name === 'AbortError') throw e;
+                    if (e.status && e.status !== 429 && e.status < 500) throw e;
+                    if (e.status === 429 && attempt >= 2) throw e;
+                    lastError = e;
+                }
+                if (attempt < MAX_ATTEMPTS) await sleep(delay, signal);
+            }
+            throw lastError;
+        }
+
+        function showFetchError(status) {
+            const msg = status === 429
+                ? "عدد الطلبات كبير حالياً، انتظر لحظات ثم أعد المحاولة"
+                : "تعذّر تحميل الألعاب الآن، الخادم مشغول. حاول مرة أخرى";
+            loader.innerHTML = `
+                <div class="flex flex-col items-center gap-4 text-center px-4">
+                    <p class="text-red-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> ${msg}</p>
+                    <button type="button" onclick="retryFetch()" class="px-5 py-2 rounded-xl bg-cyan-400 text-black text-xs font-bold hover:opacity-90 transition">إعادة المحاولة</button>
+                </div>`;
+            loader.classList.remove('hidden');
+        }
+
+        function retryFetch() {
+            fetchGames(activeConsole, document.getElementById('searchInput').value, activeArabic, false);
+        }
+
         async function fetchGames(consoleType = "", searchQuery = "", isArabic = "", append = false) {
             if (!append) {
+                // A new filter / search cancels any request that is still in flight
+                if (fetchController) fetchController.abort();
+                loader.innerHTML = loaderDefaultHTML;
                 loader.classList.remove('hidden');
                 grid.classList.add('hidden');
                 emptyState.classList.add('hidden');
                 currentPage = 1;
                 hasMoreGames = true;
             }
+
+            const controller = new AbortController();
+            if (!append) fetchController = controller;
 
             try {
                 const url = new URL(API_BASE_URL);
@@ -435,9 +504,7 @@
                 if (activeSpecial === 'emulator') url.searchParams.append('is_emulator', 1);
                 if (activeSpecial === 'pkg') url.searchParams.append('is_pkg', 1);
 
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("فشل الاتصال بالـ API");
-
+                const response = await fetchWithRetry(url, controller.signal);
                 const result = await response.json();
 
                 // SECURITY: Defensive Payload Unwrapping (Crash Prevention)
@@ -454,9 +521,13 @@
                 renderGames(gamesList, searchQuery, append);
 
             } catch (error) {
+                if (error.name === 'AbortError') return;   // replaced by a newer request
                 console.error("Error:", error);
-                if (!append) {
-                    loader.innerHTML = `<p class="text-red-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> تأكد أن خادم FastAPI يعمل على المنفذ 8000</p>`;
+                if (append) {
+                    // let the next scroll retry the same page
+                    currentPage = Math.max(1, currentPage - 1);
+                } else {
+                    showFetchError(error.status);
                 }
             }
         }
