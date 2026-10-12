@@ -38,25 +38,43 @@ SITE_NAME = "Viking"
 
 SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
 
-RATE_LIMIT_REQUESTS = 100
+# Per-IP limit (one visitor can't block the others). Kept fairly high because many
+# mobile / home connections share one public IP (CGNAT) in some countries.
+RATE_LIMIT_REQUESTS = 200
 RATE_LIMIT_WINDOW = 60
 request_tracker = defaultdict(list)
+_rate_lock = threading.Lock()
+_last_rate_sweep = 0.0
 
 
-def cleanup_old_requests(ip: str):
-    current_time = time.time()
-    request_tracker[ip] = [
-        ts for ts in request_tracker[ip]
-        if current_time - ts < RATE_LIMIT_WINDOW
-    ]
+def get_client_ip(request: Request) -> str:
+    """Real visitor IP as resolved by uvicorn (same value shown in Render's access log)."""
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
 
 
 def check_rate_limit(ip: str) -> bool:
-    cleanup_old_requests(ip)
-    if len(request_tracker[ip]) >= RATE_LIMIT_REQUESTS:
-        return False
-    request_tracker[ip].append(time.time())
-    return True
+    global _last_rate_sweep
+    now = time.time()
+    with _rate_lock:
+        # once per window, drop IPs with no recent requests so memory never grows
+        if now - _last_rate_sweep > RATE_LIMIT_WINDOW:
+            _last_rate_sweep = now
+            for key in list(request_tracker.keys()):
+                recent_ts = [t for t in request_tracker[key] if now - t < RATE_LIMIT_WINDOW]
+                if recent_ts:
+                    request_tracker[key] = recent_ts
+                else:
+                    del request_tracker[key]
+
+        recent = [t for t in request_tracker[ip] if now - t < RATE_LIMIT_WINDOW]
+        if len(recent) >= RATE_LIMIT_REQUESTS:
+            request_tracker[ip] = recent
+            return False
+        recent.append(now)
+        request_tracker[ip] = recent
+        return True
 
 
 # ==========================================
@@ -91,7 +109,7 @@ def get_db_connection():
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL environment variable is not set.")
-    conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor, connect_timeout=10)
     return conn
 
 
@@ -917,14 +935,20 @@ def get_games(
         search: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(12, ge=1, le=100),
-        x_forwarded_for: Optional[str] = Query(None, alias="X-Forwarded-For")
+        request: Request = None,
+        response: Response = None
 ):
-    client_ip = x_forwarded_for if x_forwarded_for else "unknown"
+    client_ip = get_client_ip(request)
     if not check_rate_limit(client_ip):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many requests. Please try again later."
+            detail="Too many requests. Please try again later.",
+            headers={"Retry-After": "30"}
         )
+
+    # Let browsers reuse an identical answer for 60s (same TTL as the server cache):
+    # fewer requests reach Render and less bandwidth is used.
+    response.headers["Cache-Control"] = "public, max-age=60"
 
     if is_arabic is not None and is_arabic not in (0, 1):
         raise HTTPException(
@@ -945,49 +969,50 @@ def get_games(
         return cached_response
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    base_query = "FROM games WHERE 1=1"
-    params: List = []
+        base_query = "FROM games WHERE 1=1"
+        params: List = []
 
-    if console and console.lower() != 'all':
-        base_query += " AND LOWER(console) = LOWER(%s)"
-        params.append(console)
+        if console and console.lower() != 'all':
+            base_query += " AND LOWER(console) = LOWER(%s)"
+            params.append(console)
 
-    if is_arabic is not None:
-        base_query += " AND is_arabic = %s"
-        params.append(is_arabic)
+        if is_arabic is not None:
+            base_query += " AND is_arabic = %s"
+            params.append(is_arabic)
 
-    if is_ps2_to_ps4 is not None:
-        base_query += " AND COALESCE(is_ps2_to_ps4, 0) = %s"
-        params.append(is_ps2_to_ps4)
+        if is_ps2_to_ps4 is not None:
+            base_query += " AND COALESCE(is_ps2_to_ps4, 0) = %s"
+            params.append(is_ps2_to_ps4)
 
-    if is_emulator is not None:
-        base_query += " AND COALESCE(is_emulator, 0) = %s"
-        params.append(is_emulator)
+        if is_emulator is not None:
+            base_query += " AND COALESCE(is_emulator, 0) = %s"
+            params.append(is_emulator)
 
-    if is_pkg is not None:
-        base_query += " AND COALESCE(is_pkg, 0) = %s"
-        params.append(is_pkg)
+        if is_pkg is not None:
+            base_query += " AND COALESCE(is_pkg, 0) = %s"
+            params.append(is_pkg)
 
-    if search:
-        base_query += " AND title ILIKE %s"
-        params.append(f"%{search}%")
+        if search:
+            base_query += " AND title ILIKE %s"
+            params.append(f"%{search}%")
 
-    count_query = f"SELECT COUNT(*) as total {base_query}"
-    cursor.execute(count_query, params)
-    total_items = cursor.fetchone()["total"]
-    total_pages = math.ceil(total_items / limit) if limit > 0 else 1
+        count_query = f"SELECT COUNT(*) as total {base_query}"
+        cursor.execute(count_query, params)
+        total_items = cursor.fetchone()["total"]
+        total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
-    offset = (page - 1) * limit
-    data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, is_ps2_to_ps4, is_emulator, is_pkg, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
-    data_params = params + [limit, offset]
+        offset = (page - 1) * limit
+        data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, is_ps2_to_ps4, is_emulator, is_pkg, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
+        data_params = params + [limit, offset]
 
-    cursor.execute(data_query, data_params)
-    rows = cursor.fetchall()
-    games = [dict(row) for row in rows]
-
-    conn.close()
+        cursor.execute(data_query, data_params)
+        rows = cursor.fetchall()
+        games = [dict(row) for row in rows]
+    finally:
+        conn.close()
 
     result = {
         "data": games,
@@ -1834,12 +1859,14 @@ def index_page(request: Request):
         return Response(content=cached_html, media_type="text/html", headers={"Cache-Control": "public, max-age=300"})
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # Get first page of games (limit 24, matching GAMES_PER_PAGE in index.html)
-    cursor.execute("SELECT * FROM games ORDER BY id DESC LIMIT 24")
-    games = cursor.fetchall()
-    conn.close()
+        # Get first page of games (limit 24, matching GAMES_PER_PAGE in index.html)
+        cursor.execute("SELECT * FROM games ORDER BY id DESC LIMIT 24")
+        games = cursor.fetchall()
+    finally:
+        conn.close()
 
     # Default homepage SEO meta
     base_url = get_base_url(request)
