@@ -234,6 +234,9 @@
 
                 <!-- PS4 + PS5: Emulators (games flagged is_emulator = 1) -->
                 <button data-sub="emulator" onclick="filterSubTab('emulator')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">Emulators</button>
+
+                <!-- PS5 only: PKG (games flagged is_pkg = 1) -->
+                <button data-sub="pkg" onclick="filterSubTab('pkg')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">PKG</button>
             </div>
         </div>
     </header>
@@ -356,7 +359,7 @@
         const API_BASE_URL = "{{ request.base_url }}api/games";
         let activeConsole = "";
         let activeArabic = "";
-        let activeSpecial = "";   // "" | "ps2_to_ps4" | "emulator"
+        let activeSpecial = "";   // "" | "ps2_to_ps4" | "emulator" | "pkg"
         let searchTimeout = null;
         let currentPage = 1;
         let isLoadingMore = false;
@@ -430,6 +433,7 @@
                 if (isArabic) url.searchParams.append('is_arabic', isArabic);
                 if (activeSpecial === 'ps2_to_ps4') url.searchParams.append('is_ps2_to_ps4', 1);
                 if (activeSpecial === 'emulator') url.searchParams.append('is_emulator', 1);
+                if (activeSpecial === 'pkg') url.searchParams.append('is_pkg', 1);
 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("فشل الاتصال بالـ API");
@@ -586,7 +590,8 @@
             const c = (activeConsole || '').toUpperCase();
             return {
                 ps2_to_ps4: c === 'PS4',
-                emulator: c === 'PS4' || c === 'PS5'
+                emulator: c === 'PS4' || c === 'PS5',
+                pkg: c === 'PS5'
             };
         }
 
@@ -616,7 +621,7 @@
 
         function filterSubTab(key) {
             activeArabic = (key === 'arabic') ? '1' : '';
-            activeSpecial = (key === 'ps2_to_ps4' || key === 'emulator') ? key : '';
+            activeSpecial = (key === 'ps2_to_ps4' || key === 'emulator' || key === 'pkg') ? key : '';
             updateSubTabs();
 
             currentPage = 1;
