@@ -580,6 +580,10 @@ def init_db():
         "is_ps2_to_ps4": "INTEGER DEFAULT 0",
         "is_emulator": "INTEGER DEFAULT 0",
         "is_pkg": "INTEGER DEFAULT 0",
+        "is_ffpfsc": "INTEGER DEFAULT 0",
+        "is_exfat": "INTEGER DEFAULT 0",
+        "is_theme": "INTEGER DEFAULT 0",
+        "is_tools": "INTEGER DEFAULT 0",
         "extra_1_label": "TEXT",
         "extra_1_url": "TEXT",
         "extra_2_label": "TEXT",
@@ -758,6 +762,10 @@ class GameBase(BaseModel):
     is_ps2_to_ps4: Optional[int] = None
     is_emulator: Optional[int] = None
     is_pkg: Optional[int] = None
+    is_ffpfsc: Optional[int] = None
+    is_exfat: Optional[int] = None
+    is_theme: Optional[int] = None
+    is_tools: Optional[int] = None
     extra_1_label: Optional[str] = ""
     extra_1_url: Optional[str] = ""
     extra_1_url_original: Optional[str] = ""
@@ -790,7 +798,7 @@ class GameBase(BaseModel):
             )
         return v.lower()
 
-    @field_validator('is_ps2_to_ps4', 'is_emulator', 'is_pkg')
+    @field_validator('is_ps2_to_ps4', 'is_emulator', 'is_pkg', 'is_ffpfsc', 'is_exfat', 'is_theme', 'is_tools')
     @classmethod
     def validate_special_flags(cls, v):
         if v is not None and v not in (0, 1):
@@ -932,6 +940,10 @@ def get_games(
         is_ps2_to_ps4: Optional[int] = Query(None),
         is_emulator: Optional[int] = Query(None),
         is_pkg: Optional[int] = Query(None),
+        is_ffpfsc: Optional[int] = Query(None),
+        is_exfat: Optional[int] = Query(None),
+        is_theme: Optional[int] = Query(None),
+        is_tools: Optional[int] = Query(None),
         search: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(12, ge=1, le=100),
@@ -956,14 +968,15 @@ def get_games(
             detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
         )
 
-    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator), ("is_pkg", is_pkg)):
+    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator), ("is_pkg", is_pkg),
+                                    ("is_ffpfsc", is_ffpfsc), ("is_exfat", is_exfat), ("is_theme", is_theme), ("is_tools", is_tools)):
         if _flag_val is not None and _flag_val not in (0, 1):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"قيمة {_flag_name} يجب أن تكون 0 أو 1 فقط"
             )
 
-    cache_key = f"api_games:{console}:{is_arabic}:{is_ps2_to_ps4}:{is_emulator}:{is_pkg}:{search}:{page}:{limit}"
+    cache_key = f"api_games:{console}:{is_arabic}:{is_ps2_to_ps4}:{is_emulator}:{is_pkg}:{is_ffpfsc}:{is_exfat}:{is_theme}:{is_tools}:{search}:{page}:{limit}"
     cached_response = cache_get(cache_key)
     if cached_response is not None:
         return cached_response
@@ -995,6 +1008,22 @@ def get_games(
             base_query += " AND COALESCE(is_pkg, 0) = %s"
             params.append(is_pkg)
 
+        if is_ffpfsc is not None:
+            base_query += " AND COALESCE(is_ffpfsc, 0) = %s"
+            params.append(is_ffpfsc)
+
+        if is_exfat is not None:
+            base_query += " AND COALESCE(is_exfat, 0) = %s"
+            params.append(is_exfat)
+
+        if is_theme is not None:
+            base_query += " AND COALESCE(is_theme, 0) = %s"
+            params.append(is_theme)
+
+        if is_tools is not None:
+            base_query += " AND COALESCE(is_tools, 0) = %s"
+            params.append(is_tools)
+
         if search:
             base_query += " AND title ILIKE %s"
             params.append(f"%{search}%")
@@ -1005,7 +1034,7 @@ def get_games(
         total_pages = math.ceil(total_items / limit) if limit > 0 else 1
 
         offset = (page - 1) * limit
-        data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, is_ps2_to_ps4, is_emulator, is_pkg, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
+        data_query = f"SELECT id, title, console, cover_image, size, region, game_code, is_arabic, is_ps2_to_ps4, is_emulator, is_pkg, is_ffpfsc, is_exfat, is_theme, is_tools, slug {base_query} ORDER BY id DESC LIMIT %s OFFSET %s"
         data_params = params + [limit, offset]
 
         cursor.execute(data_query, data_params)
@@ -1034,6 +1063,10 @@ def get_games_admin(
         is_ps2_to_ps4: Optional[int] = Query(None),
         is_emulator: Optional[int] = Query(None),
         is_pkg: Optional[int] = Query(None),
+        is_ffpfsc: Optional[int] = Query(None),
+        is_exfat: Optional[int] = Query(None),
+        is_theme: Optional[int] = Query(None),
+        is_tools: Optional[int] = Query(None),
         search: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(12, ge=1, le=100),
@@ -1044,7 +1077,8 @@ def get_games_admin(
             detail="قيمة is_arabic يجب أن تكون 0 أو 1 فقط"
         )
 
-    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator), ("is_pkg", is_pkg)):
+    for _flag_name, _flag_val in (("is_ps2_to_ps4", is_ps2_to_ps4), ("is_emulator", is_emulator), ("is_pkg", is_pkg),
+                                    ("is_ffpfsc", is_ffpfsc), ("is_exfat", is_exfat), ("is_theme", is_theme), ("is_tools", is_tools)):
         if _flag_val is not None and _flag_val not in (0, 1):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1076,6 +1110,22 @@ def get_games_admin(
     if is_pkg is not None:
         base_query += " AND COALESCE(is_pkg, 0) = %s"
         params.append(is_pkg)
+
+    if is_ffpfsc is not None:
+        base_query += " AND COALESCE(is_ffpfsc, 0) = %s"
+        params.append(is_ffpfsc)
+
+    if is_exfat is not None:
+        base_query += " AND COALESCE(is_exfat, 0) = %s"
+        params.append(is_exfat)
+
+    if is_theme is not None:
+        base_query += " AND COALESCE(is_theme, 0) = %s"
+        params.append(is_theme)
+
+    if is_tools is not None:
+        base_query += " AND COALESCE(is_tools, 0) = %s"
+        params.append(is_tools)
 
     if search:
         base_query += " AND title ILIKE %s"
@@ -1191,8 +1241,9 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
             extra_1_label, extra_1_url, extra_1_url_original, extra_2_label, extra_2_url, extra_2_url_original,
             extra_3_label, extra_3_url, extra_3_url_original, extra_4_label, extra_4_url, extra_4_url_original,
             extra_5_label, extra_5_url, extra_5_url_original, region, game_code,
-            password, slug, updated_at, is_ps2_to_ps4, is_emulator, is_pkg
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            password, slug, updated_at, is_ps2_to_ps4, is_emulator, is_pkg,
+            is_ffpfsc, is_exfat, is_theme, is_tools
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
@@ -1202,7 +1253,8 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
         game.password, slug, datetime.now(),
-        game.is_ps2_to_ps4 or 0, game.is_emulator or 0, game.is_pkg or 0
+        game.is_ps2_to_ps4 or 0, game.is_emulator or 0, game.is_pkg or 0,
+        game.is_ffpfsc or 0, game.is_exfat or 0, game.is_theme or 0, game.is_tools or 0
     )
 
     try:
@@ -1312,7 +1364,8 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
             extra_3_label = %s, extra_3_url = %s, extra_3_url_original = %s, extra_4_label = %s, extra_4_url = %s, extra_4_url_original = %s,
             extra_5_label = %s, extra_5_url = %s, extra_5_url_original = %s, region = %s, game_code = %s,
             password = %s, slug = %s, updated_at = %s,
-            is_ps2_to_ps4 = COALESCE(%s, is_ps2_to_ps4), is_emulator = COALESCE(%s, is_emulator), is_pkg = COALESCE(%s, is_pkg)
+            is_ps2_to_ps4 = COALESCE(%s, is_ps2_to_ps4), is_emulator = COALESCE(%s, is_emulator), is_pkg = COALESCE(%s, is_pkg),
+            is_ffpfsc = COALESCE(%s, is_ffpfsc), is_exfat = COALESCE(%s, is_exfat), is_theme = COALESCE(%s, is_theme), is_tools = COALESCE(%s, is_tools)
         WHERE id = %s
     """
     values = (
@@ -1321,7 +1374,8 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
         game.is_arabic, game.extra_1_label, game.extra_1_url, game.extra_1_url_original, game.extra_2_label, game.extra_2_url, game.extra_2_url_original,
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
-        game.password, new_slug, datetime.now(), game.is_ps2_to_ps4, game.is_emulator, game.is_pkg, id
+        game.password, new_slug, datetime.now(), game.is_ps2_to_ps4, game.is_emulator, game.is_pkg,
+        game.is_ffpfsc, game.is_exfat, game.is_theme, game.is_tools, id
     )
 
     try:
