@@ -237,6 +237,18 @@
 
                 <!-- PS5 only: PKG (games flagged is_pkg = 1) -->
                 <button data-sub="pkg" onclick="filterSubTab('pkg')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">PKG</button>
+
+                <!-- PS5 only: FFPFSC (games flagged is_ffpfsc = 1) -->
+                <button data-sub="ffpfsc" onclick="filterSubTab('ffpfsc')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">FFPFSC</button>
+
+                <!-- PS5 only: Exfat (games flagged is_exfat = 1) -->
+                <button data-sub="exfat" onclick="filterSubTab('exfat')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">Exfat</button>
+
+                <!-- PS4 + PS5: Theme (games flagged is_theme = 1) -->
+                <button data-sub="theme" onclick="filterSubTab('theme')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">Theme</button>
+
+                <!-- PS4 + PS5: Tools (games flagged is_tools = 1) -->
+                <button data-sub="tools" onclick="filterSubTab('tools')" class="sub-tab-btn hidden px-4 py-1 rounded-lg text-xs font-medium text-gray-400 hover:text-white transition-all">Tools</button>
             </div>
         </div>
     </header>
@@ -359,7 +371,17 @@
         const API_BASE_URL = "{{ request.base_url }}api/games";
         let activeConsole = "";
         let activeArabic = "";
-        let activeSpecial = "";   // "" | "ps2_to_ps4" | "emulator" | "pkg"
+        let activeSpecial = "";   // "" | "ps2_to_ps4" | "emulator" | "pkg" | "ffpfsc" | "exfat" | "theme" | "tools"
+        // sub-tab key -> API query parameter
+        const SPECIAL_PARAMS = {
+            ps2_to_ps4: 'is_ps2_to_ps4',
+            emulator: 'is_emulator',
+            pkg: 'is_pkg',
+            ffpfsc: 'is_ffpfsc',
+            exfat: 'is_exfat',
+            theme: 'is_theme',
+            tools: 'is_tools'
+        };
         let searchTimeout = null;
         let currentPage = 1;
         let isLoadingMore = false;
@@ -500,9 +522,7 @@
                 if (consoleType) url.searchParams.append('console', consoleType);
                 if (searchQuery) url.searchParams.append('search', searchQuery);
                 if (isArabic) url.searchParams.append('is_arabic', isArabic);
-                if (activeSpecial === 'ps2_to_ps4') url.searchParams.append('is_ps2_to_ps4', 1);
-                if (activeSpecial === 'emulator') url.searchParams.append('is_emulator', 1);
-                if (activeSpecial === 'pkg') url.searchParams.append('is_pkg', 1);
+                if (activeSpecial && SPECIAL_PARAMS[activeSpecial]) url.searchParams.append(SPECIAL_PARAMS[activeSpecial], 1);
 
                 const response = await fetchWithRetry(url, controller.signal);
                 const result = await response.json();
@@ -662,7 +682,11 @@
             return {
                 ps2_to_ps4: c === 'PS4',
                 emulator: c === 'PS4' || c === 'PS5',
-                pkg: c === 'PS5'
+                pkg: c === 'PS5',
+                ffpfsc: c === 'PS5',
+                exfat: c === 'PS5',
+                theme: c === 'PS4' || c === 'PS5',
+                tools: c === 'PS4' || c === 'PS5'
             };
         }
 
@@ -692,7 +716,7 @@
 
         function filterSubTab(key) {
             activeArabic = (key === 'arabic') ? '1' : '';
-            activeSpecial = (key === 'ps2_to_ps4' || key === 'emulator' || key === 'pkg') ? key : '';
+            activeSpecial = (key in SPECIAL_PARAMS) ? key : '';
             updateSubTabs();
 
             currentPage = 1;
