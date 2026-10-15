@@ -20,8 +20,11 @@
     <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
     <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/favicon.png">
 
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://vk-image-proxy-v2.zied12345zied678900.workers.dev">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -44,6 +47,8 @@
 
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0b0c10; color: #ffffff; }
+        /* Font Awesome now loads without blocking render: reserve icon width so nothing shifts when it arrives */
+        i.fa-solid, i.fa-brands { display: inline-block; min-width: 1em; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0b0c10; }
         ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
@@ -167,7 +172,7 @@
                class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition border border-white/10">
               القناة الاحتياطية
             </a>
-            <button onclick="dismissTelegramToast()" class="text-gray-400 hover:text-white w-7 h-7 flex items-center justify-center">
+            <button onclick="dismissTelegramToast()" aria-label="إغلاق" class="text-gray-400 hover:text-white w-7 h-7 flex items-center justify-center">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -186,7 +191,7 @@
 
                 <!-- Logo: compact on mobile, full on desktop -->
                 <div class="flex items-center">
-                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="Viking" id="site-brand-logo"
+                    <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/icon.jpg" alt="Viking" id="site-brand-logo" width="821" height="304"
                          class="h-10 sm:h-14 md:h-20 pointer-events-none select-none lg:hover:scale-105 transition-transform">
                 </div>
 
@@ -288,7 +293,7 @@
                 {% for game in games %}
                 <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5 lg:group-hover:shadow-[0_20px_60px_-15px_rgba(102,252,241,0.35)]">
                     <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
-                        <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
+                        <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/banners/{{ game.console | lower }}.jpg" alt="{{ game.console }} Banner" width="900" height="112" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
@@ -299,10 +304,10 @@
                              onerror="handleImageProxyError(this, this.dataset.original, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80')"
                              {% endif %}
                              class="w-full h-full object-cover group-hover:scale-110 lg:group-hover:scale-[1.15] transition-transform duration-700 ease-out"
-                             loading="lazy">
+                             {% if loop.index <= 2 %}loading="eager" fetchpriority="high"{% elif loop.index <= 4 %}loading="eager"{% else %}loading="lazy"{% endif %}>
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" width="500" height="500" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         {% if game.is_arabic == 1 %}
@@ -346,6 +351,7 @@
                         </div>
 
                         <a href="/information/{{ game.id }}-{{ game.slug | default('game') }}"
+                            aria-label="التفاصيل: {{ game.title }}"
                             class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
                             <span>التفاصيل</span>
                             <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
@@ -584,6 +590,7 @@
 
             grid.classList.remove('hidden');
 
+            let cardsHtml = '';
             games.forEach(game => {
                 const fallbackImg = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80";
                 // SECURITY: Apply URL validation to cover_image
@@ -597,7 +604,7 @@
                 <div class="game-card-neon group relative bg-[#151821] rounded-2xl overflow-hidden border border-white/5 hover:border-cyan-400/50 transition-all duration-500 flex flex-col justify-between hover:-translate-y-1.5 lg:group-hover:shadow-[0_20px_60px_-15px_rgba(102,252,241,0.35)]">
 
                     <div class="w-full h-6 md:h-7 bg-[#0b0c10] flex items-center justify-center overflow-hidden border-b border-white/10 shrink-0">
-                        <img src="${escapeHtml(bannerPath)}" alt="${escapeHtml(game.console)} Banner" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
+                        <img src="${escapeHtml(bannerPath)}" alt="${escapeHtml(game.console)} Banner" width="900" height="112" class="h-full w-full object-cover select-none pointer-events-none" onerror="this.style.display='none'">
                     </div>
 
                     <div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">
@@ -607,7 +614,7 @@
                              loading="lazy">
 
                         <div class="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 z-10 w-9 h-9 md:w-14 md:h-14 rounded-full bg-black/60 backdrop-blur-md border border-white/20 p-0.5 md:p-1 flex items-center justify-center shadow-lg pointer-events-none">
-                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" class="w-full h-full object-contain rounded-full">
+                            <img src="https://cdn.jsdelivr.net/gh/Vk553/viking@main/image/logo.jpg" alt="Viking" width="500" height="500" class="w-full h-full object-contain rounded-full">
                         </div>
 
                         ${game.is_arabic == 1 ? `
@@ -649,6 +656,7 @@
                         </div>
 
                         <a href="/information/${Number(game.id) || 0}-${game.slug ? escapeHtml(game.slug) : 'game'}"
+                            aria-label="التفاصيل: ${escapeHtml(game.title)}"
                             class="w-full py-2 md:py-2.5 rounded-xl bg-white/5 hover:bg-cyan-400 hover:text-black text-[10px] md:text-xs font-bold text-gray-200 transition-all duration-300 border border-white/5 flex items-center justify-center gap-1.5 md:gap-2 group/btn">
                             <span>التفاصيل</span>
                             <i class="fa-solid fa-arrow-left text-[9px] md:text-[10px] transform group-hover/btn:-translate-x-1 transition-transform"></i>
@@ -657,8 +665,9 @@
 
                 </div>
                 `;
-                grid.innerHTML += card;
+                cardsHtml += card;
             });
+            grid.insertAdjacentHTML('beforeend', cardsHtml);
         }
 
         function filterGames(e, consoleName) {
