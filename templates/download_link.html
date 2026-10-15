@@ -199,16 +199,16 @@
             </div>
         </div>
 
-        <!-- 3 Steps Section -->
+        <!-- 5 Steps Section -->
         <div class="space-y-4 mb-8">
-            <h2 class="text-xl font-bold text-white mb-6 text-center">أكمل الخطوات الثلاث للحصول على رابط {{ link_label }}</h2>
+            <h2 class="text-xl font-bold text-white mb-6 text-center">أكمل الخطوات الخمس للحصول على رابط {{ link_label }}</h2>
 
             <!-- Step 1 -->
             <div id="step1" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right">
                 <div class="step-number w-12 h-12 rounded-full bg-cyan-400/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 font-black text-xl shrink-0">1</div>
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-white mb-1">الخطوة الأولى</h3>
-                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
                 </div>
                 <button id="step1Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-sm transition" onclick="handleStepClick(1)">
                     المتابعة للخطوة 1
@@ -220,7 +220,7 @@
                 <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">2</div>
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-white mb-1">الخطوة الثانية</h3>
-                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
                 </div>
                 <button id="step2Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(2)">
                     المتابعة للخطوة 2
@@ -232,15 +232,39 @@
                 <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">3</div>
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-white mb-1">الخطوة الثالثة</h3>
-                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر 5 ثوانٍ</p>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
                 </div>
                 <button id="step3Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(3)">
                     المتابعة للخطوة 3
                 </button>
             </div>
+
+            <!-- Step 4 -->
+            <div id="step4" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
+                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">4</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الرابعة</h3>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
+                </div>
+                <button id="step4Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(4)">
+                    المتابعة للخطوة 4
+                </button>
+            </div>
+
+            <!-- Step 5 -->
+            <div id="step5" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
+                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">5</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الخامسة</h3>
+                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
+                </div>
+                <button id="step5Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(5)">
+                    المتابعة للخطوة 5
+                </button>
+            </div>
         </div>
 
-        <!-- Scroll-down indicator: appears after all 3 steps complete -->
+        <!-- Scroll-down indicator: appears after all 5 steps complete -->
         <div id="scrollDownIndicator" class="hidden flex flex-col items-center justify-center gap-2 my-8">
             <button id="scrollDownBtn"
                     class="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl scroll-pulse-blue"
@@ -298,10 +322,10 @@
         // Step state management
         const CIRCUMFERENCE = 2 * Math.PI * 30.2;
         const AD_URL = 'https://www.effectivecpmnetwork.com/eui5ufii?key=047fea461aa7fd86cbf52fc633357035';
-        const COUNTDOWN_SECONDS = 5;
+        const COUNTDOWN_SECONDS = 1;
 
-        let completedSteps = [false, false, false];
-        let countdownIntervals = [null, null, null];
+        let completedSteps = [false, false, false, false, false];
+        let countdownIntervals = [null, null, null, null, null];
 
         // Initialize cover image with proxy and wire up scroll-down button
         document.addEventListener('DOMContentLoaded', () => {
@@ -382,7 +406,7 @@
             btn.innerHTML = '<i class="fa-solid fa-check"></i> مكتمل';
 
             // Enable next step
-            if (stepNum < 3) {
+            if (stepNum < 5) {
                 const nextBtn = document.getElementById(`step${stepNum + 1}Btn`);
                 const nextCard = document.getElementById(`step${stepNum + 1}`);
                 const nextNumber = nextCard.querySelector('.step-number');
@@ -403,7 +427,7 @@
         }
 
         /**
-         * Called when the user clicks the blue pulsing scroll-down indicator after completing all 3 steps.
+         * Called when the user clicks the blue pulsing scroll-down indicator after completing all 5 steps.
          * Reveals the final download section and smooth-scrolls it into view, so the user visually passes
          * over the Native Banner ad on the way down (improving ad viewability).
          */
