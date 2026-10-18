@@ -813,8 +813,8 @@ class GameBase(BaseModel):
         if v is None:
             return v
         v = v.strip()
-        if len(v) > 100:
-            raise ValueError("لغة اللعبة طويلة جداً (الحد الأقصى 100 حرف)")
+        if len(v) > 300:
+            raise ValueError("لغة اللعبة طويلة جداً (الحد الأقصى 300 حرف)")
         return v
 
     @field_validator('is_arabic')
