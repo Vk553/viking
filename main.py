@@ -602,6 +602,7 @@ def init_db():
         "game_code": "TEXT",
         "requirements": "TEXT",
         "installation_guide": "TEXT",
+        "game_language": "TEXT",
         # ── ORIGINAL URL COLUMNS (upgrade) ────────────────────
         "game_link_original": "TEXT",
         "update_link_original": "TEXT",
@@ -784,6 +785,7 @@ class GameBase(BaseModel):
     extra_5_url_original: Optional[str] = ""
     region: Optional[str] = ""
     game_code: Optional[str] = ""
+    game_language: Optional[str] = None
     # ────────────────────────────────────────────
     password: Optional[str] = ""
     slug: Optional[str] = ""
@@ -803,6 +805,16 @@ class GameBase(BaseModel):
     def validate_special_flags(cls, v):
         if v is not None and v not in (0, 1):
             raise ValueError("القيمة يجب أن تكون 0 أو 1 فقط")
+        return v
+
+    @field_validator('game_language')
+    @classmethod
+    def validate_game_language(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) > 100:
+            raise ValueError("لغة اللعبة طويلة جداً (الحد الأقصى 100 حرف)")
         return v
 
     @field_validator('is_arabic')
@@ -1242,8 +1254,8 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
             extra_3_label, extra_3_url, extra_3_url_original, extra_4_label, extra_4_url, extra_4_url_original,
             extra_5_label, extra_5_url, extra_5_url_original, region, game_code,
             password, slug, updated_at, is_ps2_to_ps4, is_emulator, is_pkg,
-            is_ffpfsc, is_exfat, is_theme, is_tools
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            is_ffpfsc, is_exfat, is_theme, is_tools, game_language
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """
     values = (
@@ -1254,7 +1266,8 @@ def create_game(game: GameCreate, background_tasks: BackgroundTasks, request: Re
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
         game.password, slug, datetime.now(),
         game.is_ps2_to_ps4 or 0, game.is_emulator or 0, game.is_pkg or 0,
-        game.is_ffpfsc or 0, game.is_exfat or 0, game.is_theme or 0, game.is_tools or 0
+        game.is_ffpfsc or 0, game.is_exfat or 0, game.is_theme or 0, game.is_tools or 0,
+        game.game_language
     )
 
     try:
@@ -1365,7 +1378,8 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
             extra_5_label = %s, extra_5_url = %s, extra_5_url_original = %s, region = %s, game_code = %s,
             password = %s, slug = %s, updated_at = %s,
             is_ps2_to_ps4 = COALESCE(%s, is_ps2_to_ps4), is_emulator = COALESCE(%s, is_emulator), is_pkg = COALESCE(%s, is_pkg),
-            is_ffpfsc = COALESCE(%s, is_ffpfsc), is_exfat = COALESCE(%s, is_exfat), is_theme = COALESCE(%s, is_theme), is_tools = COALESCE(%s, is_tools)
+            is_ffpfsc = COALESCE(%s, is_ffpfsc), is_exfat = COALESCE(%s, is_exfat), is_theme = COALESCE(%s, is_theme), is_tools = COALESCE(%s, is_tools),
+            game_language = COALESCE(%s, game_language)
         WHERE id = %s
     """
     values = (
@@ -1375,7 +1389,7 @@ def update_game(id: int, game: GameUpdate, background_tasks: BackgroundTasks, re
         game.extra_3_label, game.extra_3_url, game.extra_3_url_original, game.extra_4_label, game.extra_4_url, game.extra_4_url_original,
         game.extra_5_label, game.extra_5_url, game.extra_5_url_original, game.region, game.game_code,
         game.password, new_slug, datetime.now(), game.is_ps2_to_ps4, game.is_emulator, game.is_pkg,
-        game.is_ffpfsc, game.is_exfat, game.is_theme, game.is_tools, id
+        game.is_ffpfsc, game.is_exfat, game.is_theme, game.is_tools, game.game_language, id
     )
 
     try:
