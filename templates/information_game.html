@@ -165,8 +165,23 @@
                         </div>
                         {% endif %}
 
+                        {# لغة اللعبة: مستطيل بعرض كامل فوق مربعات الحجم/الإصدار/الكود/المنطقة.
+                           يعرض النص كما كُتب في Raw Data سطراً بسطر (بدون عنوان وبدون خلفية ملونة).
+                           يختفي إذا كان الحقل فارغاً. #}
+                        {% set lang_lines = [] %}
+                        {% if game.game_language %}
+                            {% for ln in game.game_language.splitlines() %}
+                                {% if ln.strip() %}{% set _ = lang_lines.append(ln.strip()) %}{% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if lang_lines %}
+                        <div class="mt-6 lg:mt-8 w-full bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                            {% for ln in lang_lines %}<div dir="auto" class="text-sm font-semibold text-white leading-relaxed break-words">{{ ln }}</div>{% endfor %}
+                        </div>
+                        {% endif %}
+
                         <!-- Stats/Specs Grid -->
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 lg:mt-8">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 {% if lang_lines %}mt-3{% else %}mt-6 lg:mt-8{% endif %}">
                             {% if game.size and game.size.strip() %}
                             <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
                                 <span class="text-gray-500 block text-[10px]">الحجم</span>
@@ -189,21 +204,6 @@
                             <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
                                 <span class="text-gray-500 block text-[10px]">المنطقة</span>
                                 <span dir="ltr" class="font-bold text-gray-200">{{ game.region }}</span>
-                            </div>
-                            {% endif %}
-                            {# لغة اللعبة: تظهر فقط إذا أُرسلت قيمة من manager.py (تدعم عدة لغات مفصولة بـ , أو ، أو / أو |) #}
-                            {% set langs = [] %}
-                            {% if game.game_language %}
-                                {% for l in (game.game_language | replace('،', ',') | replace('/', ',') | replace('|', ',')).split(',') %}
-                                    {% if l.strip() %}{% set _ = langs.append(l.strip()) %}{% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            {% if langs %}
-                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
-                                <span class="text-gray-500 block text-[10px] mb-1"><i class="fa-solid fa-language text-cyan-400 ml-1"></i>لغة اللعبة</span>
-                                <span class="flex flex-wrap items-center justify-center lg:justify-start gap-1.5">
-                                    {% for lang in langs %}<span class="px-2.5 py-0.5 rounded-md bg-cyan-400/10 border border-cyan-400/25 text-cyan-300 text-xs font-bold leading-relaxed">{{ lang }}</span>{% endfor %}
-                                </span>
                             </div>
                             {% endif %}
                             {# صيغة اللعبة: تظهر فقط لمنصة PS5 وعند تفعيل واحد على الأقل من pkg / ffpfsc / exfat #}
