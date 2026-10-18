@@ -191,6 +191,21 @@
                                 <span dir="ltr" class="font-bold text-gray-200">{{ game.region }}</span>
                             </div>
                             {% endif %}
+                            {# لغة اللعبة: تظهر فقط إذا أُرسلت قيمة من manager.py (تدعم عدة لغات مفصولة بـ , أو ، أو / أو |) #}
+                            {% set langs = [] %}
+                            {% if game.game_language %}
+                                {% for l in (game.game_language | replace('،', ',') | replace('/', ',') | replace('|', ',')).split(',') %}
+                                    {% if l.strip() %}{% set _ = langs.append(l.strip()) %}{% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {% if langs %}
+                            <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
+                                <span class="text-gray-500 block text-[10px] mb-1"><i class="fa-solid fa-language text-cyan-400 ml-1"></i>لغة اللعبة</span>
+                                <span class="flex flex-wrap items-center justify-center lg:justify-start gap-1.5">
+                                    {% for lang in langs %}<span class="px-2.5 py-0.5 rounded-md bg-cyan-400/10 border border-cyan-400/25 text-cyan-300 text-xs font-bold leading-relaxed">{{ lang }}</span>{% endfor %}
+                                </span>
+                            </div>
+                            {% endif %}
                             {# صيغة اللعبة: تظهر فقط لمنصة PS5 وعند تفعيل واحد على الأقل من pkg / ffpfsc / exfat #}
                             {% if (game.console or '')|trim|lower == 'ps5' and (game.is_pkg == 1 or game.is_ffpfsc == 1 or game.is_exfat == 1) %}
                             <div class="bg-white/5 px-4 py-3 rounded-xl border border-white/10 hover:border-cyan-400/30 transition-colors">
