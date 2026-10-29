@@ -58,99 +58,6 @@
         ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
         ::-webkit-scrollbar-thumb:hover { background: #66fcf1; }
 
-        /* --- Modal Overlay --- */
-        #adModal { transition: opacity 0.3s ease; }
-        #adModal.hidden { display: none !important; }
-
-        /* --- Modal Card --- */
-        #modalContainer {
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-            background: rgba(18, 20, 32, 0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(102, 252, 241, 0.12);
-            box-shadow:
-                0 0 60px rgba(0,0,0,0.7),
-                0 0 30px rgba(102, 252, 241, 0.06),
-                inset 0 1px 0 rgba(255,255,255,0.06);
-        }
-
-        /* --- Ad Banner Slot (Modal 300x250) --- */
-        #adBannerSlot {
-            width: 300px;
-            height: 250px;
-            background: rgba(255,255,255,0.025);
-            border: 1.5px dashed rgba(255,255,255,0.12);
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* --- Countdown Ring --- */
-        .countdown-ring { position: relative; width: 72px; height: 72px; }
-        .countdown-ring svg { transform: rotate(-90deg); }
-        .countdown-ring .ring-bg {
-            fill: none;
-            stroke: rgba(102, 252, 241, 0.1);
-            stroke-width: 5;
-        }
-        .countdown-ring .ring-fill {
-            fill: none;
-            stroke: #66fcf1;
-            stroke-width: 5;
-            stroke-linecap: round;
-            stroke-dasharray: 189.6;
-            stroke-dashoffset: 0;
-            transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
-            filter: drop-shadow(0 0 6px rgba(102,252,241,0.7));
-        }
-        .countdown-ring .ring-text {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.35rem;
-            font-weight: 900;
-            color: #66fcf1;
-            text-shadow: 0 0 12px rgba(102,252,241,0.6);
-        }
-
-        /* --- Download Button States (Modal) --- */
-        #finalDownloadBtn {
-            transition: background 0.5s ease, box-shadow 0.5s ease, color 0.3s ease, transform 0.1s ease;
-        }
-        #finalDownloadBtn.btn-waiting {
-            background: rgba(255,255,255,0.06);
-            color: #6b7280;
-            border: 1.5px solid rgba(255,255,255,0.08);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        #finalDownloadBtn.btn-ready {
-            background: linear-gradient(135deg, #10b981, #06d6a0, #00f5c4);
-            color: #000;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2);
-            animation: pulse-green 2s infinite;
-        }
-        #finalDownloadBtn.btn-ready:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 40px rgba(16,185,129,0.7), 0 0 80px rgba(16,185,129,0.3);
-        }
-        #finalDownloadBtn.btn-ready:active { transform: scale(0.97); }
-
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 30px rgba(16,185,129,0.55), 0 0 60px rgba(16,185,129,0.2); }
-            50%       { box-shadow: 0 0 45px rgba(16,185,129,0.75), 0 0 90px rgba(16,185,129,0.35); }
-        }
-
         /* Scanning line animation in ad slot */
         @keyframes scan {
             0%   { transform: translateY(-100%); }
@@ -422,27 +329,6 @@
                     </div>
                 </div>
 
-                <!-- ===== TOP BANNER AD SLOT =====
-                     Placement: Above the download buttons grid.
-                     Recommended size: 728x90 (leaderboard, desktop) or 300x250 (mobile).
-                     Supported networks: HilltopAds Banner, Monetag Display, Google AdSense.
-                     HOW TO INSERT: Replace the inner comment block with your ad network <script> tag.
-                     The container enforces min-height and centers the ad unit automatically.
-                ===== -->
-                <div id="ad-slot-main-top" class="w-full bg-[#151821]/60 border border-dashed border-cyan-500/20 rounded-2xl p-4 my-6 lg:my-0 flex flex-col items-center justify-center min-h-[100px] overflow-hidden select-none">
-                    <span class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Advertisement</span>
-                    <script>
-                      atOptions = {
-                        'key' : 'ad813ce2fd67c6e72c1b3a84037acb7c',
-                        'format' : 'iframe',
-                        'height' : 90,
-                        'width' : 728,
-                        'params' : {}
-                      };
-                    </script>
-                    <script src="https://www.highperformanceformat.com/ad813ce2fd67c6e72c1b3a84037acb7c/invoke.js"></script>
-                </div>
-
                 <!-- ===== DOWNLOAD BUTTONS (rendered dynamically by renderDownloadButtons()) ===== -->
                 <div id="downloadBtnsGrid" class="pt-4 lg:pt-6">
                     <!-- Buttons injected by JS -->
@@ -482,88 +368,6 @@
     </footer>
 
 
-    <!-- ============================================================
-         DOWNLOAD MODAL  —  Glassmorphism Dark + Ad Slot + Countdown
-    ============================================================= -->
-    <div id="adModal"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden"
-         style="background: rgba(0,0,0,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0;">
-
-        <!-- Backdrop click closes modal -->
-        <div id="modalBackdrop" class="absolute inset-0 cursor-pointer"></div>
-
-        <!-- Modal Card -->
-        <div id="modalContainer"
-             class="relative z-10 w-full max-w-sm rounded-3xl overflow-hidden flex flex-col"
-             style="transform: scale(0.92);">
-
-            <!-- Top Bar -->
-            <div class="flex items-center justify-between px-5 py-3.5"
-                 style="background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.07);">
-                <div class="flex items-center gap-2 text-xs font-bold text-cyan-400">
-                    <i class="fa-solid fa-lock-keyhole text-sm animate-pulse"></i>
-                    <span>جاري تجهيز رابط التحميل الآمن...</span>
-                </div>
-                <button onclick="closeAdModal()"
-                        class="w-7 h-7 rounded-full flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-white/5 transition text-xs">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Body -->
-            <div class="flex flex-col items-center gap-5 p-6">
-
-                <p class="text-[11px] text-gray-400 text-center leading-relaxed">
-                    يرجى الانتظار، جاري تجهيز رابط التحميل الآمن...
-                </p>
-
-                <!-- ===== IN-MODAL AD SLOT 300×250 =====
-                     Placement: Captive attention during the 10-second countdown wait.
-                     Supported networks: HilltopAds, Monetag, Google AdSense (if approved).
-                     HOW TO INSERT: Replace the inner comment block with your ad tag script.
-                     Do NOT change the outer #adBannerSlot div dimensions (300x250 enforced by CSS).
-                ===== -->
-                <div id="adBannerSlot">
-                    <script>
-                      atOptions = {
-                        'key' : '757e3352fe86b3165c517e20433072bc',
-                        'format' : 'iframe',
-                        'height' : 250,
-                        'width' : 300,
-                        'params' : {}
-                      };
-                    </script>
-                    <script src="https://www.highperformanceformat.com/757e3352fe86b3165c517e20433072bc/invoke.js"></script>
-                </div>
-
-                <!-- Countdown Ring -->
-                <div class="countdown-ring" id="countdownRing">
-                    <svg width="72" height="72" viewBox="0 0 72 72">
-                        <circle class="ring-bg"   cx="36" cy="36" r="30.2"/>
-                        <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30.2"/>
-                    </svg>
-                    <div class="ring-text" id="secondsLeft">10</div>
-                </div>
-
-                <!-- Final Download Button (inside modal) -->
-                <button id="finalDownloadBtn"
-                        class="btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5"
-                        disabled>
-                    <i class="fa-solid fa-hourglass-half" id="btnIcon"></i>
-                    <span id="btnText">يرجى الانتظار (10)</span>
-                </button>
-
-                <!-- Cancel link -->
-                <button onclick="closeAdModal()"
-                        class="text-[11px] text-gray-600 hover:text-red-400 underline underline-offset-2 transition">
-                    إلغاء والعودة للصفحة
-                </button>
-            </div>
-
-        </div>
-    </div>
-
-
     <!-- ===== SCRIPTS ===== -->
     {% include "partials/_image_proxy.html" %}
     <script type="application/json" id="__INITIAL_GAME__">{{ game_json | safe }}</script>
@@ -571,19 +375,15 @@
         // ─── CONFIG ───────────────────────────────────────────────────────────────
         // Swap this with your live Render production API URL when deploying.
         const API_BASE_URL = "{{ request.base_url }}api/games";
-        const COUNTDOWN_START = 10;
-        const CIRCUMFERENCE   = 2 * Math.PI * 30.2; // ≈ 189.7
 
         // ─── DOUBLE-CLICK AD-GATE ───────────────────────────────────────────────────
         // Tracks which linkKeys have already had their "first click" ad-gate triggered this session.
         // Resets on page reload (in-memory only, no persistence needed).
         const firstClickDone = new Set();
-        const SMARTLINK_AD_URL = 'https://asiafilm.org/4/6be63ba2085449ffc3a85c479811d954';
+        const SMARTLINK_AD_URL = 'https://asiafilm.org/4/007274da6a5c9c048cfba2bb6302648c'; // Smartlink_2 (31856834)
 
         // ─── STATE ────────────────────────────────────────────────────────────────
         let currentGameData     = null;
-        let activeUrlToRedirect = "";
-        let countdownTimer      = null;
         let isServerRendered    = false;  // Track if data came from SSR
 
         // ─── URL PARAMS ───────────────────────────────────────────────────────────
@@ -610,37 +410,34 @@
             }
         }
 
-        // ─── POP-UNDER: 24-hour localStorage gate ─────────────────────────────────
-        // This function NEVER fires on page load.
-        // It fires ONLY when called explicitly from:
-        //   (a) finalDownloadBtn click (inside modal)  → activateDownloadButton()
-        //   (b) Mirror / Direct Download button click  → handleMirrorClick()
-        //   (c) Copy Password button click             → copyPassword()
-        function triggerOptionalPopUnder() {
-            const STORAGE_KEY   = 'vkstore_popunder_last';
-            const WINDOW_MS     = 24 * 60 * 60 * 1000; // 24 hours in ms
-            const now           = Date.now();
+        // ─── POP-UNDER (Adsterra Smartlink_1 of viking-fd06.onrender.com — 30053110) ───
+        const POPUNDER_URL          = 'https://ardance.org/4/047fea461aa7fd86cbf52fc633357035';
+        const CLICK_POPUNDER_GAP_MS = 30 * 1000;            // any click on the page: at most once every 30 seconds
+        const COPY_POPUNDER_GAP_MS  = 24 * 60 * 60 * 1000;  // copy-password button: at most once every 24 hours
+        const memLast = {};                                  // in-memory fallback if localStorage is unavailable
 
-            try {
-                const lastFired = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
-                if (now - lastFired < WINDOW_MS) {
-                    // Still within the 24-hour window — skip pop-under
-                    return;
-                }
-                // Outside window — fire and record timestamp
-                localStorage.setItem(STORAGE_KEY, String(now));
-            } catch (e) {
-                // localStorage unavailable (private mode etc.) — skip silently
-                return;
-            }
+        function popUnderAllowed(storageKey, gapMs) {
+            const now = Date.now();
+            let last = memLast[storageKey] || 0;
+            try { last = Math.max(last, parseInt(localStorage.getItem(storageKey) || '0', 10)); } catch (e) {}
+            if (now - last < gapMs) return false;
+            memLast[storageKey] = now;
+            try { localStorage.setItem(storageKey, String(now)); } catch (e) {}
+            return true;
+        }
 
-            // ▼▼▼ INSERT POP-UNDER NETWORK TRIGGER HERE ▼▼▼
-            // This is the single execution point for your pop-under network.
-            // HilltopAds / ClickAdu / Adsterra pop-under scripts typically
-            // attach to window and fire automatically on the next click event.
-            // If your network requires a manual trigger call, place it here.
-            window.open('https://www.effectivecpmnetwork.com/eui5ufii?key=047fea461aa7fd86cbf52fc633357035', '_blank');
-            // ▲▲▲ END POP-UNDER TRIGGER ▲▲▲
+        function openPopUnder() {
+            window.open(POPUNDER_URL, '_blank');
+        }
+
+        // Any click on the page (30-second gap)
+        function triggerClickPopUnder() {
+            if (popUnderAllowed('vkstore_popunder_click_last', CLICK_POPUNDER_GAP_MS)) openPopUnder();
+        }
+
+        // Copy Password button (24-hour gap)
+        function triggerCopyPopUnder() {
+            if (popUnderAllowed('vkstore_popunder_last', COPY_POPUNDER_GAP_MS)) openPopUnder();
         }
 
         // ─── INIT ─────────────────────────────────────────────────────────────────
@@ -778,13 +575,11 @@
         }
 
         // ─── RENDER DOWNLOAD BUTTONS ──────────────────────────────────────────────
-        // Button strategy (Plan B):
-        //   • game_link   → PRIMARY FUNNEL button  → opens countdown modal → monetized URL shortener
-        //   • update_link → MIRROR / DIRECT button → instant new tab + pop-under trigger (once/24h)
-        //   • dlc_link, extra_1_url, extra_2_url → SECONDARY DARK buttons → open countdown modal
-        //
-        // The "update_link" is deliberately repurposed as the high-trust direct mirror.
-        // If you have a dedicated mirror link field in your API, swap 'update_link' for it here.
+        // Button strategy:
+        //   • All buttons (game_link, update_link, dlc_link, extra_1_url, extra_2_url) are <a> links
+        //     to the /download-link/ page, gated by handleDownloadButtonClick():
+        //     1st click → opens the Smartlink ad in a new tab + shows "click again" hint
+        //     2nd click → follows the link normally.
 
         function renderDownloadButtons(game) {
             const grid = document.getElementById('downloadBtnsGrid');
@@ -798,14 +593,14 @@
                     label     : 'تحميل اللعبة',
                     sub       : 'BASE GAME',
                     icon      : 'fa-gamepad',
-                    type      : 'primary'   // → opens countdown modal funnel
+                    type      : 'primary'
                 },
                 {
                     linkKey   : 'update_link',
                     label     : 'تحميل التحديث',
                     sub       : 'DOWNLOAD UPDATE',
                     icon      : 'fa-bolt',
-                    type      : 'mirror'    // → instant open + optional pop-under
+                    type      : 'mirror'
                 },
                 {
                     linkKey   : 'dlc_link',
@@ -992,145 +787,11 @@
             }
         }
 
-        // ─── MIRROR CLICK HANDLER ─────────────────────────────────────────────────
-        // Mirror button: validate → fire pop-under (once/24h) → open direct URL instantly.
-        // No modal, no countdown. Maximum trust signal for the user.
-        function handleMirrorClick(rawUrl) {
-            const secureUrl = getSecureUrl(rawUrl);
-            if (!secureUrl) {
-                triggerError("رابط التحميل غير آمن");
-                return;
-            }
-            triggerOptionalPopUnder(); // once per 24h gate enforced inside
-            window.open(secureUrl, '_blank', 'noopener,noreferrer');
-        }
-
         // ─── ERROR HANDLER ────────────────────────────────────────────────────────
         function triggerError(msg) {
             document.getElementById('pageLoader').classList.add('hidden');
             document.getElementById('errorBox').classList.remove('hidden');
             document.getElementById('errorText').textContent = msg;
-        }
-
-        // ─── DOWNLOAD FUNNEL (primary + secondary buttons) ────────────────────────
-        function startDownloadFunnel(linkKey) {
-            if (!currentGameData) return;
-            const url = currentGameData[linkKey];
-            if (!isValidLink(url)) return;
-
-            const secureUrl = getSecureUrl(url.trim());
-            if (!secureUrl) {
-                console.error('Blocked insecure redirect attempt:', url);
-                triggerError("رابط التحميل غير آمن");
-                return;
-            }
-
-            activeUrlToRedirect = secureUrl;
-            openModal();
-            startCountdown();
-        }
-
-        // ─── COUNTDOWN ────────────────────────────────────────────────────────────
-        function startCountdown() {
-            const btn    = document.getElementById('finalDownloadBtn');
-            const btnTxt = document.getElementById('btnText');
-            const btnIco = document.getElementById('btnIcon');
-            const secEl  = document.getElementById('secondsLeft');
-            const ring   = document.getElementById('ringFill');
-
-            btn.disabled            = true;
-            btn.className           = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btnIco.className        = "fa-solid fa-hourglass-half";
-            btnTxt.textContent      = `يرجى الانتظار (${COUNTDOWN_START})`;
-            secEl.textContent       = COUNTDOWN_START;
-            ring.style.strokeDasharray  = CIRCUMFERENCE;
-            ring.style.strokeDashoffset = 0;
-            ring.style.stroke       = "#66fcf1";
-
-            clearInterval(countdownTimer);
-            let count = COUNTDOWN_START;
-
-            countdownTimer = setInterval(() => {
-                count--;
-                secEl.textContent  = count;
-                btnTxt.textContent = count > 0 ? `يرجى الانتظار (${count})` : "يرجى الانتظار (0)";
-
-                const progress = count / COUNTDOWN_START;
-                ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
-
-                if (count <= 0)      { ring.style.stroke = "#10b981"; }
-                else if (count <= 3) { ring.style.stroke = "#f59e0b"; }
-
-                if (count <= 0) {
-                    clearInterval(countdownTimer);
-                    activateDownloadButton();
-                }
-            }, 1000);
-        }
-
-        function activateDownloadButton() {
-            const btn    = document.getElementById('finalDownloadBtn');
-            const btnTxt = document.getElementById('btnText');
-            const btnIco = document.getElementById('btnIcon');
-            const secEl  = document.getElementById('secondsLeft');
-
-            secEl.textContent  = "✓";
-            secEl.style.color  = "#10b981";
-
-            btn.disabled   = false;
-            btn.className  = "btn-ready w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btnIco.className   = "fa-solid fa-download";
-            btnTxt.textContent = "انتقل إلى رابط التحميل — Download Now";
-
-            // Inline handler: fires pop-under gate (a), then opens the link
-            btn.onclick = () => {
-                triggerOptionalPopUnder(); // trigger point (a): final download button inside modal
-                window.open(activeUrlToRedirect, '_blank', 'noopener,noreferrer');
-                closeAdModal();
-            };
-        }
-
-        // ─── MODAL OPEN / CLOSE ───────────────────────────────────────────────────
-        function openModal() {
-            const modal = document.getElementById('adModal');
-            const card  = document.getElementById('modalContainer');
-            modal.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    modal.style.opacity  = '1';
-                    card.style.transform = 'scale(1)';
-                });
-            });
-        }
-
-        function closeAdModal() {
-            clearInterval(countdownTimer);
-            const modal = document.getElementById('adModal');
-            const card  = document.getElementById('modalContainer');
-            modal.style.opacity  = '0';
-            card.style.transform = 'scale(0.92)';
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                resetModalState();
-            }, 300);
-        }
-
-        function resetModalState() {
-            const btn    = document.getElementById('finalDownloadBtn');
-            const btnTxt = document.getElementById('btnText');
-            const btnIco = document.getElementById('btnIcon');
-            const secEl  = document.getElementById('secondsLeft');
-            const ring   = document.getElementById('ringFill');
-
-            btn.disabled                = true;
-            btn.className               = "btn-waiting w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5";
-            btn.onclick                 = null;
-            btnIco.className            = "fa-solid fa-hourglass-half";
-            btnTxt.textContent          = `يرجى الانتظار (${COUNTDOWN_START})`;
-            secEl.textContent           = COUNTDOWN_START;
-            secEl.style.color           = "#66fcf1";
-            ring.style.strokeDashoffset = 0;
-            ring.style.stroke           = "#66fcf1";
         }
 
         // ─── ARCHIVE PASSWORD ─────────────────────────────────────────────────────
@@ -1154,7 +815,7 @@
             const copyText = document.getElementById('copyText');
 
             navigator.clipboard.writeText(passwordText).then(() => {
-                triggerOptionalPopUnder(); // trigger point (c): Copy Password button
+                triggerCopyPopUnder(); // 24h gate
 
                 copyIcon.className = 'fa-solid fa-check text-green-400';
                 copyText.textContent = 'تم النسخ!';
@@ -1172,8 +833,14 @@
             });
         }
 
-        // ─── MODAL BACKDROP ───────────────────────────────────────────────────────
-        document.getElementById('modalBackdrop').addEventListener('click', closeAdModal);
+        // ─── GLOBAL POP-UNDER ON ANY CLICK (30-second gap) ────────────────────────
+        // Excluded: download buttons (reserved for Smartlink_2) and the Copy Password button
+        // (it uses its own 24-hour gate).
+        document.addEventListener('click', (e) => {
+            const el = e.target;
+            if (el && el.closest && (el.closest('#downloadBtnsGrid') || el.closest('#copyPasswordBtn'))) return;
+            triggerClickPopUnder();
+        });
     </script>
 
 </body>
