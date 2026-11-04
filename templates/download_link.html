@@ -201,7 +201,7 @@
 
         <!-- 5 Steps Section -->
         <div class="space-y-4 mb-8">
-            <h2 class="text-xl font-bold text-white mb-6 text-center">أكمل الخطوات الخمس للحصول على رابط {{ link_label }}</h2>
+            <h2 class="text-xl font-bold text-white mb-6 text-center">أكمل الخطوات الثلاث للحصول على رابط {{ link_label }}</h2>
 
             <!-- Step 1 -->
             <div id="step1" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right">
@@ -236,30 +236,6 @@
                 </div>
                 <button id="step3Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(3)">
                     المتابعة للخطوة 3
-                </button>
-            </div>
-
-            <!-- Step 4 -->
-            <div id="step4" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
-                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">4</div>
-                <div class="flex-1">
-                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الرابعة</h3>
-                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
-                </div>
-                <button id="step4Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(4)">
-                    المتابعة للخطوة 4
-                </button>
-            </div>
-
-            <!-- Step 5 -->
-            <div id="step5" class="step-card bg-[#151821] rounded-2xl border border-white/10 p-6 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 text-center sm:text-right opacity-50">
-                <div class="step-number w-12 h-12 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center text-gray-400 font-black text-xl shrink-0">5</div>
-                <div class="flex-1">
-                    <h3 class="text-lg font-bold text-white mb-1">الخطوة الخامسة</h3>
-                    <p class="text-sm text-gray-400">اضغط على الزر أدناه وانتظر ثانية واحدة</p>
-                </div>
-                <button id="step5Btn" class="step-btn w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 text-gray-400 font-bold text-sm transition" disabled onclick="handleStepClick(5)">
-                    المتابعة للخطوة 5
                 </button>
             </div>
         </div>
@@ -333,9 +309,11 @@
         const CIRCUMFERENCE = 2 * Math.PI * 30.2;
         const AD_URL = 'https://asiafilm.org/4/007274da6a5c9c048cfba2bb6302648c'; // Smartlink_2 (31856834)
         const COUNTDOWN_SECONDS = 1;
+        const TOTAL_STEPS = 3;       // number of steps on the page
+        const AD_STEPS = 2;          // the ad (Smartlink_2) opens on steps 1 and 2 only; step 3 has no ad
 
-        let completedSteps = [false, false, false, false, false];
-        let countdownIntervals = [null, null, null, null, null];
+        let completedSteps = [false, false, false];
+        let countdownIntervals = [null, null, null];
 
         // Initialize cover image with proxy and wire up scroll-down button
         document.addEventListener('DOMContentLoaded', () => {
@@ -362,8 +340,10 @@
             const stepCard = document.getElementById(`step${stepNum}`);
             const stepNumber = stepCard.querySelector('.step-number');
 
-            // Open ad in new tab
-            window.open(AD_URL, '_blank', 'noopener,noreferrer');
+            // Open ad in new tab (steps 1 and 2 only)
+            if (stepNum <= AD_STEPS) {
+                window.open(AD_URL, '_blank', 'noopener,noreferrer');
+            }
 
             // Disable button and start countdown
             btn.disabled = true;
@@ -416,7 +396,7 @@
             btn.innerHTML = '<i class="fa-solid fa-check"></i> مكتمل';
 
             // Enable next step
-            if (stepNum < 5) {
+            if (stepNum < TOTAL_STEPS) {
                 const nextBtn = document.getElementById(`step${stepNum + 1}Btn`);
                 const nextCard = document.getElementById(`step${stepNum + 1}`);
                 const nextNumber = nextCard.querySelector('.step-number');
@@ -437,7 +417,7 @@
         }
 
         /**
-         * Called when the user clicks the blue pulsing scroll-down indicator after completing all 5 steps.
+         * Called when the user clicks the blue pulsing scroll-down indicator after completing all steps.
          * Reveals the final download section and smooth-scrolls it into view, so the user visually passes
          * over the Native Banner ad on the way down (improving ad viewability).
          */
