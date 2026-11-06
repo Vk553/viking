@@ -256,6 +256,11 @@
                 <i class="fa-solid fa-download"></i>
                 <span>الحصول على رابط {{ link_label }}</span>
             </button>
+            <!-- Shown after the link is fetched: a real click on a link can never be blocked by a popup blocker -->
+            <div id="manualLinkBox" class="hidden mt-4 text-sm text-gray-400">
+                لم يفتح الرابط تلقائياً؟
+                <a id="manualLink" href="#" target="_blank" rel="noopener noreferrer" class="text-cyan-400 font-bold underline">اضغط هنا لفتح رابط التحميل</a>
+            </div>
         </div>
 
         <!-- Error Box -->
@@ -444,6 +449,28 @@
             }
         }
 
+        // Opens the download link in a new tab. Returns false when the browser blocked the popup.
+        // (No "noopener" feature on purpose: with it window.open() ALWAYS returns null, so a
+        //  blocked popup could not be told apart from a successful one.)
+        function openDownloadUrl(url) {
+            let w = null;
+            try { w = window.open(url, '_blank'); } catch (e) { w = null; }
+            if (w) {
+                try { w.opener = null; } catch (e) {}
+                return true;
+            }
+            return false;
+        }
+
+        function showManualLink(url) {
+            const box = document.getElementById('manualLinkBox');
+            const a = document.getElementById('manualLink');
+            if (box && a) {
+                a.href = url;
+                box.classList.remove('hidden');
+            }
+        }
+
         function revealDownloadLink() {
             const btn = document.getElementById('finalDownloadBtn');
             btn.disabled = true;
@@ -479,8 +506,15 @@
                     const secureUrl = getSecureUrl(data.url);
                     if (secureUrl) {
                         activeUrlToRedirect = secureUrl;
-                        window.open(secureUrl, '_blank', 'noopener,noreferrer');
-                        btn.innerHTML = '<i class="fa-solid fa-check"></i> تم';
+                        showManualLink(secureUrl);
+                        if (openDownloadUrl(secureUrl)) {
+                            btn.innerHTML = '<i class="fa-solid fa-check"></i> تم';
+                        } else {
+                            // The popup was blocked (this call runs after an async fetch, so mobile browsers and
+                            // in-app browsers such as Telegram/Instagram block it): a normal navigation never is.
+                            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحويلك إلى رابط التحميل...';
+                            window.location.href = secureUrl;
+                        }
                     } else {
                         showError('الرابط غير صالح');
                         btn.disabled = false;
