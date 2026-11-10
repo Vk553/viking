@@ -36,7 +36,7 @@ INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", "default_indexnow_key_replace_in_produc
 security_scheme = HTTPBearer()
 SITE_NAME = "Viking"
 
-SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp']
+SUPPORTED_CONSOLES = ['ps1', 'ps2', 'ps3', 'ps4', 'ps5', 'pc', 'xbox', 'psp', 'switch']
 
 # Per-IP limit (one visitor can't block the others). Kept fairly high because many
 # mobile / home connections share one public IP (CGNAT) in some countries.
