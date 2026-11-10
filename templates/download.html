@@ -313,20 +313,33 @@
                 </div>
 
                 <!-- ===== Archive Password Component (conditional rendering) ===== -->
-                <div id="archivePasswordBox" class="hidden bg-[#1a1e29]/80 lg:bg-gradient-to-r lg:from-[#1a1e29]/90 lg:to-[#151821]/90 backdrop-blur-md border border-cyan-500/20 lg:border-cyan-400/25 rounded-2xl lg:rounded-3xl p-5 lg:p-7 shadow-2xl lg:shadow-[0_0_35px_-10px_rgba(34,211,238,0.2)]">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-key text-cyan-400 text-xl"></i>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-bold text-gray-400 mb-0.5">كلمة المرور لفك الضغط / Archive Password:</span>
-                                <span id="passwordValue" class="text-lg font-black text-cyan-300 tracking-wider" dir="ltr"></span>
-                            </div>
-                        </div>
-                        <button id="copyPasswordBtn" onclick="copyPassword()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95">
+                <div id="archivePasswordBox" class="hidden bg-[#151821] lg:bg-gradient-to-r lg:from-[#1a1e29]/90 lg:to-[#151821]/90 border border-cyan-400/20 rounded-2xl lg:rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl lg:shadow-[0_0_35px_-10px_rgba(34,211,238,0.2)]">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Lock icon -->
+                        <span class="w-9 h-9 shrink-0 rounded-xl bg-cyan-400/10 border border-cyan-400/25 flex items-center justify-center">
+                            <i class="fa-solid fa-lock text-cyan-400 text-sm"></i>
+                        </span>
+
+                        <!-- Label -->
+                        <span class="text-sm font-semibold text-gray-300">كلمة السر:</span>
+
+                        <!-- Password pill (monospace) -->
+                        <span class="inline-flex items-center px-4 py-1.5 rounded-xl bg-black/30 border border-white/15 text-cyan-300 text-base sm:text-lg font-bold tracking-wide select-all" dir="ltr" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;">
+                            <span id="passwordValue"></span>
+                        </span>
+
+                        <!-- Copy button -->
+                        <button id="copyPasswordBtn" onclick="copyPassword()" class="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95">
                             <i class="fa-solid fa-clipboard" id="copyIcon"></i>
                             <span id="copyText">Copy</span>
                         </button>
                     </div>
+
+                    <!-- Thanks line: "Thanks for <password>" (filled automatically) -->
+                    <p class="mt-3 pt-3 border-t border-white/5 text-sm text-gray-400 flex items-center gap-2" dir="ltr">
+                        <i class="fa-solid fa-heart text-pink-400 text-xs"></i>
+                        <span>Thanks for <span id="thanksPasswordValue" class="font-bold text-cyan-300"></span></span>
+                    </p>
                 </div>
 
                 <!-- ===== DOWNLOAD BUTTONS (rendered dynamically by renderDownloadButtons()) ===== -->
@@ -802,6 +815,8 @@
 
             if (hasPassword) {
                 passwordValue.textContent = game.password.trim();
+                const thanksValue = document.getElementById('thanksPasswordValue');
+                if (thanksValue) thanksValue.textContent = game.password.trim();
                 passwordBox.classList.remove('hidden');
             } else {
                 passwordBox.classList.add('hidden');
